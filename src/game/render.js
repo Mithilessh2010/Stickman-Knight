@@ -1,47 +1,60 @@
 import { ARENA_W, ARENA_H, GROUND_Y, ENTITY_HEIGHT } from './constants.js';
 
 function drawDefaultBackground(ctx) {
+  // Deep dark sky
   const g = ctx.createLinearGradient(0, 0, 0, ARENA_H);
-  g.addColorStop(0, '#0a0e17');
-  g.addColorStop(0.55, '#0d1320');
-  g.addColorStop(1, '#05070a');
+  g.addColorStop(0, '#04060b');
+  g.addColorStop(0.5, '#060a12');
+  g.addColorStop(1, '#020407');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, ARENA_W, ARENA_H);
 
+  // Center radial glow
   ctx.save();
-  ctx.globalAlpha = 0.55;
-  const grd = ctx.createRadialGradient(ARENA_W / 2, GROUND_Y - 40, 60, ARENA_W / 2, GROUND_Y - 40, 600);
-  grd.addColorStop(0, 'rgba(125, 211, 252, 0.18)');
-  grd.addColorStop(1, 'rgba(125, 211, 252, 0)');
+  const grd = ctx.createRadialGradient(ARENA_W / 2, GROUND_Y - 20, 0, ARENA_W / 2, GROUND_Y - 20, 500);
+  grd.addColorStop(0, 'rgba(0, 229, 255, 0.06)');
+  grd.addColorStop(1, 'rgba(0, 229, 255, 0)');
   ctx.fillStyle = grd;
   ctx.fillRect(0, 0, ARENA_W, ARENA_H);
   ctx.restore();
 
+  // Vertical accent pillars
   ctx.save();
-  ctx.fillStyle = 'rgba(125, 211, 252, 0.05)';
-  for (let i = 0; i < 6; i++) {
-    const x = 120 + i * 200;
-    ctx.fillRect(x, 200, 14, GROUND_Y - 200);
+  for (let i = 0; i < 5; i++) {
+    const x = 160 + i * 210;
+    const pillarG = ctx.createLinearGradient(0, 100, 0, GROUND_Y);
+    pillarG.addColorStop(0, 'rgba(0, 229, 255, 0)');
+    pillarG.addColorStop(0.5, 'rgba(0, 229, 255, 0.04)');
+    pillarG.addColorStop(1, 'rgba(0, 229, 255, 0.01)');
+    ctx.fillStyle = pillarG;
+    ctx.fillRect(x - 1, 80, 2, GROUND_Y - 80);
   }
   ctx.restore();
 
+  // Floor
   const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
-  gg.addColorStop(0, '#1a2233');
-  gg.addColorStop(1, '#080a10');
+  gg.addColorStop(0, '#0e1520');
+  gg.addColorStop(1, '#03050a');
   ctx.fillStyle = gg;
   ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
 
-  ctx.strokeStyle = 'rgba(125, 211, 252, 0.35)';
+  // Ground line with glow
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 229, 255, 0.5)';
+  ctx.shadowBlur = 8;
+  ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(0, GROUND_Y);
   ctx.lineTo(ARENA_W, GROUND_Y);
   ctx.stroke();
+  ctx.restore();
 
-  ctx.strokeStyle = 'rgba(125, 211, 252, 0.07)';
+  // Floor grid lines (perspective)
+  ctx.strokeStyle = 'rgba(0, 229, 255, 0.04)';
   ctx.lineWidth = 1;
-  for (let i = 0; i < 18; i++) {
-    const y = GROUND_Y + i * 8 + (i * i * 0.6);
+  for (let i = 0; i < 14; i++) {
+    const y = GROUND_Y + i * 10 + i * i * 0.5;
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(ARENA_W, y);
@@ -63,7 +76,7 @@ function drawRooftopBackground(ctx, time) {
     const x = (i * ARENA_W / 8) + Math.sin(time * 0.01 + i) * 20;
     const brightness = 0.3 + Math.sin(time * 0.02 + i) * 0.2;
     ctx.globalAlpha = brightness;
-    ctx.fillStyle = '#7dd3fc';
+    ctx.fillStyle = '#00e5ff';
     ctx.fillRect(x, 50, 40, 8);
   }
   ctx.restore();

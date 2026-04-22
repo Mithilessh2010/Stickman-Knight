@@ -1,85 +1,63 @@
 import React from 'react';
 import { audioManager } from '../game/audio.js';
 
+const ROWS = [
+  { label:'Engine', val:'React 18 + HTML5 Canvas' },
+  { label:'Build', val:'Vite' },
+  { label:'Deployment', val:'Vercel' },
+  { label:'Typography', val:'Bebas Neue · Barlow Condensed' },
+  { label:'Fighters', val:'12 unique characters' },
+  { label:'Version', val:'2.0.0' },
+];
+
 export default function CreditsScreen({ onClose }) {
   return (
-    <div className="screen" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', overflow: 'auto' }}>
-      <div className="settings-card" style={{ maxWidth: 700 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Credits</h2>
-          <button
-            onClick={onClose}
-            onMouseEnter={() => audioManager.playUIHover()}
-            style={{
-              fontSize: 18,
-              border: 'none',
-              background: 'none',
-              color: 'var(--text-dim)',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
-            ✕
-          </button>
+    <div className="screen" style={{ background:'rgba(0,0,0,0.7)', backdropFilter:'blur(12px)', overflow:'auto', padding:24 }}>
+      <div style={{
+        background:'rgba(6,6,8,0.98)',
+        border:'1px solid rgba(255,255,255,0.07)',
+        borderTop:'2px solid #ff9500',
+        borderRadius:3, padding:'36px 40px',
+        maxWidth:500, width:'100%',
+        textAlign:'center',
+        boxShadow:'0 30px 80px rgba(0,0,0,0.9)',
+      }}>
+        {/* Title */}
+        <div style={{ fontFamily:'var(--font-display)', fontSize:52, letterSpacing:'0.04em', lineHeight:1, color:'#fff', marginBottom:4 }}>
+          STICKMAN
+        </div>
+        <div style={{ fontFamily:'var(--font-display)', fontSize:52, letterSpacing:'0.04em', lineHeight:1, color:'#ff9500', textShadow:'0 0 30px rgba(255,149,0,0.4)', marginBottom:8 }}>
+          ARENA
+        </div>
+        <div style={{ fontSize:11, color:'var(--text-dim)', letterSpacing:'0.25em', textTransform:'uppercase', marginBottom:32 }}>
+          A 2D Fighting Game
         </div>
 
-        <div style={{ lineHeight: 2, color: 'var(--text-dim)', textAlign: 'center' }}>
-          <div style={{ fontSize: 28, fontWeight: 900, background: 'linear-gradient(135deg, #7dd3fc, #0ea5e9)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', marginBottom: 8 }}>
-            STICKMAN KNIGHT
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.1em', marginBottom: 24 }}>
-            A 2D Fighting Game Experience
-          </div>
-
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', marginTop: 24, marginBottom: 12 }}>Development</h3>
-          <div style={{ fontSize: 12, marginBottom: 20 }}>
-            <div><strong>Game Design & Programming:</strong> Stickman Knight Team</div>
-            <div><strong>Physics & Combat Engine:</strong> Custom Canvas-based implementation</div>
-            <div><strong>Character Design:</strong> 12 uniquely balanced fighters</div>
-            <div><strong>UI/UX Design:</strong> Modern, accessible interface</div>
-          </div>
-
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', marginTop: 24, marginBottom: 12 }}>Technology</h3>
-          <div style={{ fontSize: 12, marginBottom: 20 }}>
-            <div>Built with <strong>React 18</strong> and <strong>Vite</strong></div>
-            <div>Rendered with <strong>HTML5 Canvas</strong> 2D API</div>
-            <div>Web Audio API for sound</div>
-            <div>Deployed on <strong>Vercel</strong></div>
-          </div>
-
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', marginTop: 24, marginBottom: 12 }}>Special Thanks</h3>
-          <div style={{ fontSize: 12, marginBottom: 20 }}>
-            <div>Thanks to all playtesters and feedback providers</div>
-            <div>Community for inspiration and support</div>
-            <div>Rajdhani font for beautiful typography</div>
-          </div>
-
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', marginTop: 24, marginBottom: 12 }}>Version Info</h3>
-          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 20 }}>
-            <div>Version: 1.0.0</div>
-            <div>Release Date: 2024</div>
-            <div>All Rights Reserved</div>
-          </div>
-
-          <div style={{
-            padding: 12,
-            background: 'rgba(52,211,153,0.1)',
-            border: '1px solid rgba(52,211,153,0.2)',
-            borderRadius: 6,
-            fontSize: 11,
-            lineHeight: 1.5,
-            marginTop: 20,
-          }}>
-            🎮 <strong>Thank you for playing Stickman Knight!</strong> Enjoy epic battles and master your favorite fighters. May your combos be devastating and your victories glorious!
+        {/* Tech table */}
+        <div style={{ borderTop:'1px solid rgba(255,255,255,0.07)', paddingTop:24, marginBottom:24 }}>
+          <div style={{ fontSize:9, letterSpacing:'0.25em', textTransform:'uppercase', color:'#ff9500', marginBottom:14, fontWeight:700 }}>Built With</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {ROWS.map(({ label, val }) => (
+              <div key={label} style={{ display:'flex', justifyContent:'space-between', padding:'7px 12px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.05)', borderRadius:2 }}>
+                <span style={{ fontSize:11, color:'var(--text-dim)', letterSpacing:'0.08em' }}>{label}</span>
+                <span style={{ fontSize:11, fontWeight:700, color:'var(--text)' }}>{val}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <button
-          className="btn"
-          onClick={() => { audioManager.playUIClick(); onClose(); }}
-          style={{ width: '100%', marginTop: 20 }}
+        {/* Thanks */}
+        <div style={{ borderTop:'1px solid rgba(255,255,255,0.07)', paddingTop:20, marginBottom:24 }}>
+          <div style={{ fontSize:9, letterSpacing:'0.25em', textTransform:'uppercase', color:'var(--text-dim)', marginBottom:10, fontWeight:700 }}>Special Thanks</div>
+          <div style={{ fontSize:12, color:'var(--text-dim)', lineHeight:1.7 }}>
+            All playtesters and the fighting game community.<br/>
+            Thank you for playing.
+          </div>
+        </div>
+
+        <button className="btn" onClick={() => { audioManager.playUIClick(); onClose(); }}
           onMouseEnter={() => audioManager.playUIHover()}
-        >
+          style={{ width:'100%', padding:'12px' }}>
           Back
         </button>
       </div>

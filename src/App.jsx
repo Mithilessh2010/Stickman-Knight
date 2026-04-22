@@ -151,7 +151,7 @@ export default function App() {
         {screen === SCREENS.START && <StartScreen onStart={handleStart} onSettings={() => handleOpenSettings(SCREENS.START)} onHelp={handleOpenHelp} onCredits={handleOpenCredits} onTournament={() => setScreen(SCREENS.TOURNAMENT)} />}
         {screen === SCREENS.SELECT && <CharacterSelect onSelect={handleSelect} onSettings={() => handleOpenSettings(SCREENS.SELECT)} />}
         {screen === SCREENS.STAGE_SELECT && <StageSelect onSelect={handleStageSelect} onBack={() => setScreen(SCREENS.SELECT)} />}
-        {screen === SCREENS.TOURNAMENT && <TournamentScreen onStart={handleStartTournament} />}
+        {screen === SCREENS.TOURNAMENT && <TournamentScreen onStart={handleStartTournament} onBack={() => setScreen(SCREENS.START)} />}
         {screen === SCREENS.GAME && (
           <GameScreen
             playerChar={playerChar}

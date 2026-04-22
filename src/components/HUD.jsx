@@ -1,313 +1,169 @@
 import React from 'react';
 import { getDisplayKey } from '../game/keybinds.js';
 
-function AbilityIcon({ ability, keyLabel, cd, isUlt }) {
+const ABILITY_SYMBOLS = {
+  melee: '⚔', projectile: '→', dashStrike: '⇒', charge: '▶▶',
+  teleport: '◈', nova: '◉', slam: '▼', spin: '↻',
+  shield: '◫', aura: '✦', judgment: '✧', cleave: '∿',
+  buffStack: '↑↑', carnage: '✕', roll: '↺', rapidFire: '⤺',
+  execution: '⦿', curse: '⊖', explosion: '⊛', scythe: '⌒',
+  shadowStep: '◆', smokeBomb: '●', deathMark: '◎', flameDash: '⇝',
+  lavaPool: '⊕', eruption: '⊙', summon: '⊞', boneShield: '⊟',
+  titan: '⊠', vault: '⤴', backflip: '⤵', rain: '↓↓',
+  meteor: '☄', piercingShot: '→→', arrowStorm: '↓', buff: '▲',
+};
+
+function Pip({ color, label, ready }) {
+  return (
+    <div style={{
+      width: 5, height: 5, borderRadius: '50%',
+      background: ready ? color : 'rgba(255,255,255,0.12)',
+      boxShadow: ready ? `0 0 5px ${color}` : 'none',
+      transition: 'all 0.2s',
+    }} title={label} />
+  );
+}
+
+function AbilitySlot({ ability, keyLabel, cd, isUlt, charColor }) {
   const ready = cd <= 0;
   const cdSec = Math.ceil(cd / 60);
-
-  // Generate simple ability icon based on ability type
-  const getAbilitySymbol = (type) => {
-    const symbols = {
-      melee: '⚔',
-      projectile: '→',
-      dashStrike: '→',
-      charge: '▶',
-      teleport: '◈',
-      nova: '◉',
-      slam: '⬇',
-      spin: '◯',
-      shield: '🛡',
-      aura: '◆',
-      judgment: '✦',
-      cleave: '∿',
-      buffStack: '↑',
-      carnage: '✕',
-      roll: '↻',
-      rapidFire: '⤺',
-      execution: '✓',
-      curse: '✗',
-      explosion: '⊗',
-      scythe: '𒀭',
-    };
-    return symbols[type] || '•';
-  };
+  const color = isUlt ? '#ff9500' : charColor;
+  const size = isUlt ? 56 : 44;
 
   return (
     <div style={{
-      position: 'relative',
-      width: isUlt ? 64 : 48,
-      height: isUlt ? 64 : 48,
-      borderRadius: 8,
-      background: isUlt
-        ? 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(251,191,36,0.1))'
-        : 'rgba(125,211,252,0.1)',
-      border: `2px solid ${isUlt ? (ready ? 'rgba(251,191,36,0.8)' : 'rgba(251,191,36,0.3)') : (ready ? 'rgba(125,211,252,0.6)' : 'rgba(125,211,252,0.3)')}`,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      boxShadow: ready ? (isUlt ? '0 0 12px rgba(251,191,36,0.4)' : '0 0 8px rgba(125,211,252,0.3)') : 'none',
-      transition: 'all 0.2s',
-      cursor: 'default',
+      position: 'relative', width: size, height: size,
+      borderRadius: 2,
+      background: isUlt ? 'rgba(255,149,0,0.07)' : 'rgba(255,255,255,0.04)',
+      border: `1px solid ${ready ? (isUlt ? 'rgba(255,149,0,0.6)' : `${charColor}66`) : 'rgba(255,255,255,0.09)'}`,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      boxShadow: ready ? `0 0 10px ${color}30` : 'none',
+      transition: 'all 0.18s',
+      overflow: 'hidden',
     }}>
-      {/* Ability Symbol */}
+      {/* Symbol */}
       <div style={{
-        fontSize: isUlt ? 28 : 20,
-        fontWeight: 700,
-        color: isUlt ? '#fbbf24' : '#7dd3fc',
-        textAlign: 'center',
-        lineHeight: 1,
+        fontSize: isUlt ? 22 : 16,
+        color: ready ? color : 'rgba(255,255,255,0.25)',
+        lineHeight: 1, transition: 'color 0.2s',
+        textShadow: ready ? `0 0 8px ${color}` : 'none',
       }}>
-        {getAbilitySymbol(ability.type)}
+        {ABILITY_SYMBOLS[ability.type] || '·'}
       </div>
-
-      {/* Key Label */}
-      <div style={{
-        position: 'absolute',
-        bottom: 4,
-        fontSize: 8,
-        fontWeight: 700,
-        color: isUlt ? '#fbbf24' : '#7dd3fc',
-        letterSpacing: '0.05em',
-      }}>
+      {/* Key label */}
+      <div style={{ fontSize: 8, fontWeight: 700, color: ready ? color : 'var(--text-dim)', marginTop: 2, letterSpacing: '0.05em', opacity: 0.7 }}>
         {keyLabel}
       </div>
 
-      {/* Cooldown Overlay */}
+      {/* CD overlay */}
       {!ready && (
         <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          borderRadius: 6,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#fff',
-          fontSize: isUlt ? 20 : 14,
-          fontWeight: 700,
+          position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.68)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: isUlt ? 18 : 14, fontWeight: 900, color: '#fff', borderRadius: 2,
         }}>
           {cdSec}
         </div>
       )}
 
-      {/* Ready Indicator */}
+      {/* Ready glow ping */}
       {ready && (
         <div style={{
-          position: 'absolute',
-          top: -6,
-          right: -6,
-          width: 16,
-          height: 16,
-          borderRadius: '50%',
-          background: isUlt ? '#fbbf24' : '#34d399',
-          border: '2px solid rgba(0,0,0,0.8)',
-          fontSize: 10,
-          lineHeight: '14px',
-          textAlign: 'center',
-          color: '#000',
-          fontWeight: 700,
-        }}>
-          ✓
-        </div>
+          position: 'absolute', top: -2, right: -2,
+          width: 8, height: 8, borderRadius: '50%',
+          background: isUlt ? '#ff9500' : '#00ff9d',
+          boxShadow: `0 0 6px ${isUlt ? '#ff9500' : '#00ff9d'}`,
+        }} />
       )}
+    </div>
+  );
+}
+
+function HealthBar({ pct, color, flipped }) {
+  const barColor = pct > 60 ? '#00ff9d' : pct > 30 ? '#ffb800' : '#ff3355';
+  return (
+    <div style={{ width: '100%', position: 'relative' }}>
+      <div style={{
+        width: '100%', height: 10,
+        background: 'rgba(255,255,255,0.06)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 1, overflow: 'hidden',
+      }}>
+        <div style={{
+          width: `${pct}%`, height: '100%',
+          background: `linear-gradient(${flipped ? '270deg' : '90deg'}, ${barColor}cc, ${barColor})`,
+          float: flipped ? 'right' : 'none',
+          transition: 'width 0.12s ease-out',
+          boxShadow: `0 0 6px ${barColor}60`,
+        }} />
+      </div>
     </div>
   );
 }
 
 export default function HUD({ player, enemy, keybinds }) {
   if (!player || !enemy || !keybinds) return null;
-
   const pPct = Math.max(0, player.hp / player.character.maxHp) * 100;
   const ePct = Math.max(0, enemy.hp / enemy.character.maxHp) * 100;
 
-  // Determine health bar color
-  const getHpColor = (pct) => {
-    if (pct > 60) return '#34d399'; // green
-    if (pct > 30) return '#fbbf24'; // yellow
-    return '#f87171'; // red
-  };
+  const SideHUD = ({ ent, pct, flipped, abilities, cds }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: 'clamp(200px, 22vw, 290px)', alignItems: flipped ? 'flex-end' : 'flex-start' }}>
+      {/* Name row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexDirection: flipped ? 'row-reverse' : 'row' }}>
+        {/* Avatar pip */}
+        <div style={{
+          width: 36, height: 36, borderRadius: 2, flexShrink: 0,
+          background: `${ent.character.color}18`,
+          border: `1px solid ${ent.character.color}55`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 16, color: ent.character.color,
+          fontWeight: 900, fontFamily: 'var(--font-display)',
+          boxShadow: `inset 0 0 10px ${ent.character.color}22`,
+        }}>
+          {ent.character.name[0]}
+        </div>
+        <div style={{ textAlign: flipped ? 'right' : 'left' }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: ent.character.color, letterSpacing: '0.06em', lineHeight: 1, textTransform: 'uppercase' }}>
+            {ent.character.name}
+          </div>
+          <div style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 1 }}>
+            {ent.character.role}
+          </div>
+        </div>
+      </div>
+
+      {/* HP bar + number */}
+      <div style={{ width: '100%' }}>
+        <HealthBar pct={pct} flipped={flipped} />
+        <div style={{ display: 'flex', justifyContent: flipped ? 'flex-end' : 'flex-start', marginTop: 3 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.05em' }}>
+            {Math.ceil(ent.hp)}<span style={{ fontSize: 9, opacity: 0.5 }}>/{ent.character.maxHp}</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Abilities (player only) */}
+      {abilities && (
+        <div style={{ display: 'flex', gap: 6, flexDirection: flipped ? 'row-reverse' : 'row' }}>
+          {abilities.map((ab, i) => (
+            <AbilitySlot key={i} ability={ab.def} keyLabel={ab.key} cd={cds[ab.cdKey]} isUlt={i === 3} charColor={ent.character.color} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const playerAbilities = [
+    { def: player.character.basic, key: getDisplayKey('basic', keybinds), cdKey: 'basic' },
+    { def: player.character.ability1, key: getDisplayKey('ability1', keybinds), cdKey: 'ability1' },
+    { def: player.character.ability2, key: getDisplayKey('ability2', keybinds), cdKey: 'ability2' },
+    { def: player.character.ultimate, key: getDisplayKey('ultimate', keybinds), cdKey: 'ultimate' },
+  ];
 
   return (
-    <div style={{
-      position: 'absolute',
-      inset: 0,
-      pointerEvents: 'none',
-      fontSize: 'clamp(10px, 1vw, 14px)',
-      fontFamily: '"Rajdhani", system-ui, sans-serif',
-    }}>
-      {/* Player Side (Top Left) */}
-      <div style={{
-        position: 'absolute',
-        top: 16,
-        left: 16,
-        width: 'clamp(220px, 25vw, 320px)',
-      }}>
-        {/* Fighter Name & Portrait */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-          <div style={{
-            width: 50,
-            height: 50,
-            borderRadius: 6,
-            background: `linear-gradient(135deg, ${player.character.color}22, ${player.character.accent}22)`,
-            border: `2px solid ${player.character.color}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 24,
-            fontWeight: 700,
-            color: player.character.color,
-            flexShrink: 0,
-          }}>
-            {player.character.name[0]}
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: player.character.color, marginBottom: 2 }}>
-              {player.character.name}
-            </div>
-            <div style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 600 }}>
-              {player.character.role}
-            </div>
-          </div>
-        </div>
-
-        {/* Health Bar */}
-        <div style={{
-          width: '100%',
-          height: 24,
-          background: 'rgba(0,0,0,0.4)',
-          border: `1px solid ${getHpColor(pPct)}`,
-          borderRadius: 4,
-          overflow: 'hidden',
-          marginBottom: 12,
-          position: 'relative',
-          boxShadow: `inset 0 0 8px ${getHpColor(pPct)}40`,
-        }}>
-          <div style={{
-            width: `${pPct}%`,
-            height: '100%',
-            background: `linear-gradient(90deg, ${getHpColor(pPct)}, ${getHpColor(pPct)}aa)`,
-            transition: 'width 0.1s',
-            boxShadow: `0 0 8px ${getHpColor(pPct)}80`,
-          }} />
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#fff',
-            textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-            pointerEvents: 'none',
-          }}>
-            {Math.ceil(player.hp)} / {player.character.maxHp}
-          </div>
-        </div>
-
-        {/* Abilities */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 8,
-        }}>
-          <AbilityIcon
-            ability={player.character.basic}
-            keyLabel={getDisplayKey('basic', keybinds)}
-            cd={player.cooldowns.basic}
-          />
-          <AbilityIcon
-            ability={player.character.ability1}
-            keyLabel={getDisplayKey('ability1', keybinds)}
-            cd={player.cooldowns.ability1}
-          />
-          <AbilityIcon
-            ability={player.character.ability2}
-            keyLabel={getDisplayKey('ability2', keybinds)}
-            cd={player.cooldowns.ability2}
-          />
-          <AbilityIcon
-            ability={player.character.ultimate}
-            keyLabel={getDisplayKey('ultimate', keybinds)}
-            cd={player.cooldowns.ultimate}
-            isUlt
-          />
-        </div>
-      </div>
-
-      {/* Enemy Side (Top Right) */}
-      <div style={{
-        position: 'absolute',
-        top: 16,
-        right: 16,
-        width: 'clamp(220px, 25vw, 320px)',
-        textAlign: 'right',
-      }}>
-        {/* Fighter Name & Portrait */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexDirection: 'row-reverse' }}>
-          <div style={{
-            width: 50,
-            height: 50,
-            borderRadius: 6,
-            background: `linear-gradient(135deg, ${enemy.character.color}22, ${enemy.character.accent}22)`,
-            border: `2px solid ${enemy.character.color}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 24,
-            fontWeight: 700,
-            color: enemy.character.color,
-            flexShrink: 0,
-          }}>
-            {enemy.character.name[0]}
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: enemy.character.color, marginBottom: 2 }}>
-              {enemy.character.name}
-            </div>
-            <div style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 600 }}>
-              {enemy.character.role}
-            </div>
-          </div>
-        </div>
-
-        {/* Health Bar */}
-        <div style={{
-          width: '100%',
-          height: 24,
-          background: 'rgba(0,0,0,0.4)',
-          border: `1px solid ${getHpColor(ePct)}`,
-          borderRadius: 4,
-          overflow: 'hidden',
-          marginBottom: 12,
-          position: 'relative',
-          boxShadow: `inset 0 0 8px ${getHpColor(ePct)}40`,
-        }}>
-          <div style={{
-            width: `${ePct}%`,
-            height: '100%',
-            background: `linear-gradient(90deg, ${getHpColor(ePct)}aa, ${getHpColor(ePct)})`,
-            transition: 'width 0.1s',
-            boxShadow: `0 0 8px ${getHpColor(ePct)}80`,
-            marginLeft: 'auto',
-          }} />
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#fff',
-            textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-            pointerEvents: 'none',
-          }}>
-            {Math.ceil(enemy.hp)} / {enemy.character.maxHp}
-          </div>
-        </div>
-      </div>
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <SideHUD ent={player} pct={pPct} flipped={false} abilities={playerAbilities} cds={player.cooldowns} />
+      <SideHUD ent={enemy} pct={ePct} flipped={true} />
     </div>
   );
 }

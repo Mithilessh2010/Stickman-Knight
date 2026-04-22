@@ -214,8 +214,8 @@ export default function SettingsScreen({ onClose }) {
                     onClick={() => handleRebindStart(action)}
                     style={{
                       padding: '6px 12px',
-                      background: rebinding === action ? 'rgba(251, 191, 36, 0.2)' : 'rgba(125,211,252,0.1)',
-                      border: rebinding === action ? '1px solid rgba(251, 191, 36, 0.5)' : '1px solid rgba(125,211,252,0.3)',
+                      background: rebinding === action ? 'rgba(255,149,0,0.15)' : 'rgba(0,229,255,0.08)',
+                      border: rebinding === action ? '1px solid rgba(255,149,0,0.45)' : '1px solid rgba(0,229,255,0.25)',
                       borderRadius: 4,
                       color: rebinding === action ? '#fbbf24' : 'var(--accent)',
                       cursor: 'pointer',
@@ -264,8 +264,8 @@ export default function SettingsScreen({ onClose }) {
             </div>
             <div style={{
               padding: 12,
-              background: 'rgba(125,211,252,0.1)',
-              border: '1px solid rgba(125,211,252,0.2)',
+              background: 'rgba(0,229,255,0.08)',
+              border: '1px solid rgba(0,229,255,0.15)',
               borderRadius: 6,
               fontSize: 11,
               lineHeight: 1.5,

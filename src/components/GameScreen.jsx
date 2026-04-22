@@ -23,10 +23,10 @@ const ACTION_BUTTONS = [
 
 const BTN_BASE = {
   width: 56, height: 56, borderRadius: 12,
-  background: 'rgba(20,24,34,0.72)',
-  border: '1px solid rgba(125,211,252,0.25)',
-  color: '#e6ebf5',
-  fontFamily: '"Rajdhani",system-ui,sans-serif',
+  background: 'rgba(6,6,8,0.85)',
+  border: '1px solid rgba(0,229,255,0.2)',
+  color: '#f0f0f8',
+  fontFamily: 'var(--font-ui)',
   fontSize: 14, fontWeight: 700,
   letterSpacing: '0.1em', textTransform: 'uppercase',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -35,7 +35,7 @@ const BTN_BASE = {
 };
 const BTN_ULT = {
   ...BTN_BASE, width: 64, height: 64,
-  border: '1px solid rgba(251,191,36,0.4)', color: '#fbbf24',
+  border: '1px solid rgba(255,149,0,0.4)', color: '#ff9500',
 };
 
 function TouchControls({ inputRef }) {
