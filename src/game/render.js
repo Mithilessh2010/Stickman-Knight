@@ -1166,6 +1166,16 @@ export function drawEffects(ctx, world) {
       ctx.globalAlpha = a * 0.4;
       ctx.lineWidth = 12 * a;
       ctx.stroke();
+    } else if (e.kind === 'shockwave') {
+      ctx.globalAlpha = a * 0.8;
+      ctx.strokeStyle = e.color;
+      ctx.lineWidth = e.width * (1 - a * 0.5);
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = a * 0.3;
+      ctx.lineWidth = e.width * 3;
+      ctx.stroke();
     }
     ctx.restore();
   }
