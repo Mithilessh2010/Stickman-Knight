@@ -32,7 +32,17 @@ export default function App() {
     // Load keybinds on mount
     const loaded = loadKeybinds();
     setKeybinds(loaded);
-  }, []);
+
+    // Escape key for settings
+    const handleEsc = (e) => {
+      if (e.code === 'Escape' && screen !== SCREENS.SETTINGS && screen !== SCREENS.START) {
+        setPrevScreen(screen);
+        setScreen(SCREENS.SETTINGS);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [screen]);
 
   const handleStart = useCallback(() => setScreen(SCREENS.SELECT), []);
 

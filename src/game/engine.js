@@ -3,6 +3,7 @@ import { CHARACTERS } from './characters.js';
 import {
   spawnHitBurst, spawnRing, spawnSlash, spawnDust, spawnTrail, updateParticles
 } from './particles.js';
+import { audioManager } from './audio.js';
 
 export function createEntity(charId, x, facing, isPlayer) {
   const ch = CHARACTERS[charId];
@@ -70,6 +71,15 @@ export function tryAction(world, ent, key) {
   ent.cooldowns[key] = def.cooldown;
   ent.state = 'cast';
   ent.stateTime = 0;
+
+  // Play audio for ability cast
+  if (key === 'basic') {
+    audioManager.playSfx('attack_basic');
+  } else if (key === 'ability1' || key === 'ability2') {
+    audioManager.playAbilityCast();
+  } else if (key === 'ultimate') {
+    audioManager.playUltimate();
+  }
 
   if (def.type === 'vault') {
     ent.vel.vy = def.jumpVy;
@@ -310,6 +320,116 @@ function onActiveEnter(world, ent) {
       addShake(world, 4, 8);
       break;
     }
+    // Paladin abilities
+    case 'shield': {
+      ent.shield = { hp: def.shieldHp, maxHp: def.shieldHp, duration: def.duration, dr: def.dr };
+      spawnRing(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, '#fcd34d', 70);
+      addShake(world, 4, 8);
+      break;
+    }
+    case 'aura': {
+      ent._auraActive = { duration: def.duration, radius: def.radius, tickRate: def.tickRate, hpRestore: def.hpRestore, lastTick: 0 };
+      spawnRing(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, '#fcd34d', def.radius);
+      addShake(world, 3, 6);
+      break;
+    }
+    case 'judgment': {
+      const target = otherOf(world, ent);
+      if (target && !target.dead) {
+        const dx = target.pos.x - ent.pos.x;
+        const dy = (target.pos.y - ENTITY_HEIGHT / 2) - (ent.pos.y - ENTITY_HEIGHT / 2);
+        if (Math.hypot(dx, dy) <= def.radius) {
+          applyHit(world, ent, target, scaledDamage(ent, def.damage), def.knockback);
+          spawnRing(world, target.pos.x, target.pos.y - ENTITY_HEIGHT / 2, '#fcd34d', 100);
+          addShake(world, 12, 18);
+        }
+      }
+      break;
+    }
+    // Berserker abilities
+    case 'cleave': {
+      ent.vel.vx = 0;
+      const box = meleeHitbox(ent, def);
+      spawnSlash(world, cx + f * 40, cy, f * 0.2, def.range, ent.character.color);
+      break;
+    }
+    case 'buffStack': {
+      if (!ent.furyStacks) ent.furyStacks = 0;
+      if (ent.furyStacks < def.maxStacks) ent.furyStacks += 1;
+      const dmgMul = Math.pow(def.damagePerStack, ent.furyStacks);
+      const speedMul = Math.pow(def.speedPerStack, ent.furyStacks);
+      ent.buff = { duration: def.duration, dmgMul: dmgMul, speedMul: speedMul, dr: 0 };
+      spawnRing(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, '#dc2626', 60);
+      addShake(world, 2, 6);
+      break;
+    }
+    case 'carnage': {
+      ent.vel.vx = 0;
+      addShake(world, 6, 10);
+      break;
+    }
+    // Gunslinger abilities
+    case 'roll': {
+      ent.vel.vx = def.dashSpeed * f;
+      ent.iframes = def.iframes;
+      for (let i = 0; i < 8; i++) {
+        spawnTrail(world, ent.pos.x + (Math.random() - 0.5) * 30, ent.pos.y - 20, '#8b5cf6');
+      }
+      break;
+    }
+    case 'rapidFire': {
+      const charColor = ent.character.color;
+      for (let i = 0; i < def.count; i++) {
+        world.projectiles.push({
+          kind: 'bolt', owner: ent, hitId: ent.hitId + i,
+          x: cx + f * 32, y: cy - (i - (def.count - 1) / 2) * 12,
+          vx: def.projSpeed * f, vy: 0,
+          life: def.projLife, damage: scaledDamage(ent, def.damage),
+          knockback: def.knockback, color: def.projColor || charColor,
+          radius: 7, rot: 0
+        });
+      }
+      addShake(world, 3, 6);
+      break;
+    }
+    case 'execution': {
+      world.projectiles.push({
+        kind: 'bullet', owner: ent, hitId: ent.hitId,
+        x: cx + f * 32, y: cy,
+        vx: def.projSpeed * f, vy: 0,
+        life: def.projLife, damage: scaledDamage(ent, def.damage),
+        knockback: def.knockback, color: '#a78bfa',
+        radius: 8, rot: 0
+      });
+      addShake(world, 8, 14);
+      break;
+    }
+    // Necromancer abilities
+    case 'curse': {
+      const target = otherOf(world, ent);
+      if (target && !target.dead) {
+        target._cursed = { duration: def.duration, damageReduction: def.damageReduction, speedReduction: def.speedReduction };
+        spawnRing(world, target.pos.x, target.pos.y - ENTITY_HEIGHT / 2, '#6366f1', 80);
+        addShake(world, 5, 10);
+      }
+      break;
+    }
+    case 'explosion': {
+      const target = otherOf(world, ent);
+      const tx = target ? target.pos.x : ent.pos.x + f * 200;
+      world.fallingObjects.push({
+        kind: 'explosion', x: tx, y: GROUND_Y, vy: 0, fall: 0, target: GROUND_Y,
+        owner: ent, hitId: ent.hitId, damage: scaledDamage(ent, def.damage),
+        radius: def.radius, knockback: def.knockback, life: 10
+      });
+      spawnRing(world, tx, GROUND_Y, '#6366f1', def.radius);
+      addShake(world, 10, 14);
+      break;
+    }
+    case 'scythe': {
+      addShake(world, 4, 8);
+      break;
+    }
     default: break;
   }
 }
@@ -388,6 +508,59 @@ function onActiveTick(world, ent) {
       }
       break;
     }
+    // Paladin abilities
+    case 'aura': {
+      if (ent._auraActive && ent._auraActive.duration > 0) {
+        ent._auraActive.lastTick = (ent._auraActive.lastTick || 0) + 1;
+        if (ent._auraActive.lastTick >= ent._auraActive.tickRate) {
+          ent._auraActive.lastTick = 0;
+          if (ent.hp < ent.character.maxHp) {
+            ent.hp = Math.min(ent.character.maxHp, ent.hp + ent._auraActive.hpRestore);
+            spawnRing(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, '#fcd34d', 40);
+          }
+        }
+      }
+      break;
+    }
+    // Berserker abilities
+    case 'cleave': {
+      const box = meleeHitbox(ent, def);
+      if (rectsOverlap(box, entityBox(other))) {
+        applyHit(world, ent, other, scaledDamage(ent, def.damage), def.knockback);
+      }
+      break;
+    }
+    case 'carnage': {
+      if (a.phaseTime % def.tickRate === 0) {
+        const dx = other.pos.x - ent.pos.x;
+        const dy = (other.pos.y - ENTITY_HEIGHT / 2) - (ent.pos.y - ENTITY_HEIGHT / 2);
+        if (Math.hypot(dx, dy) <= def.radius) {
+          ent.hitId += 1;
+          const dmgMul = ent.buff && ent.buff.duration > 0 ? ent.buff.dmgMul : 1;
+          applyHit(world, ent, other, scaledDamage(ent, def.damage) * def.dmgMul, def.knockback);
+          spawnSlash(world, ent.pos.x + ent.facing * 30, ent.pos.y - ENTITY_HEIGHT / 2, 0, 70, '#dc2626');
+        }
+      }
+      break;
+    }
+    // Gunslinger abilities
+    case 'rapidFire': {
+      // Multi-hit happens in onActiveEnter, no per-tick logic needed
+      break;
+    }
+    // Necromancer abilities
+    case 'scythe': {
+      if (a.phaseTime % 6 === 0) {
+        const dx = other.pos.x - ent.pos.x;
+        const dy = (other.pos.y - ENTITY_HEIGHT / 2) - (ent.pos.y - ENTITY_HEIGHT / 2);
+        if (Math.hypot(dx, dy) <= def.radius) {
+          ent.hitId += 1;
+          applyHit(world, ent, other, scaledDamage(ent, def.damage), def.knockback);
+          spawnSlash(world, ent.pos.x + ent.facing * 40, ent.pos.y - ENTITY_HEIGHT / 2, 0, 80, '#6366f1');
+        }
+      }
+      break;
+    }
     default: break;
   }
 }
@@ -454,6 +627,10 @@ function applyHit(world, attacker, victim, damage, knockback) {
   if (victim.buff && victim.buff.duration > 0 && victim.buff.dr) {
     damage *= (1 - victim.buff.dr);
   }
+  // Apply curse damage penalty (curse makes you take MORE damage)
+  if (victim._cursed && victim._cursed.duration > 0) {
+    damage *= (2 - victim._cursed.damageReduction); // if damageReduction is 0.75, damage is multiplied by 1.25
+  }
   // bone shield absorbs damage
   if (victim.shield && victim.shield.hp > 0) {
     const absorbed = Math.min(victim.shield.hp, damage);
@@ -477,6 +654,10 @@ function applyHit(world, attacker, victim, damage, knockback) {
   victim.onGround = false;
   victim.knockTime = 14;
 
+  // Play hit sound based on damage
+  const intensity = damage < 15 ? 'light' : damage < 25 ? 'normal' : 'heavy';
+  audioManager.playHit(intensity);
+
   spawnHitBurst(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, attacker.character.color, 14);
   addShake(world, Math.min(10, damage * 0.4), 10);
 
@@ -487,6 +668,7 @@ function applyHit(world, attacker, victim, damage, knockback) {
     victim.stateTime = 0;
     victim.vel.vx = dir * 4;
     victim.vel.vy = -7;
+    audioManager.playKo();
     spawnHitBurst(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, '#ffffff', 30);
   }
 }
@@ -507,6 +689,16 @@ function updateEntity(world, ent) {
   if (ent.buff) {
     ent.buff.duration -= 1;
     if (ent.buff.duration <= 0) ent.buff = null;
+  }
+  // Handle curse duration
+  if (ent._cursed) {
+    ent._cursed.duration -= 1;
+    if (ent._cursed.duration <= 0) ent._cursed = null;
+  }
+  // Handle aura duration
+  if (ent._auraActive) {
+    ent._auraActive.duration -= 1;
+    if (ent._auraActive.duration <= 0) ent._auraActive = null;
   }
 
   ent.animTime += 1;
@@ -536,6 +728,8 @@ function updateEntity(world, ent) {
 
   let speedMul = ent.buff ? ent.buff.speedMul : 1;
   if (ent.stealth > 0 && ent.character.id === 'assassin') speedMul *= (ent.character.ability2.speedBoost || 1.5);
+  // Apply curse debuff
+  if (ent._cursed && ent._cursed.duration > 0) speedMul *= ent._cursed.speedReduction;
   const baseSpeed = ent.character.speed * speedMul;
   if (canAct && ent.knockTime <= 0) {
     if (inp.left) ent.vel.vx = -baseSpeed;

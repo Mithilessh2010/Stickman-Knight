@@ -5,6 +5,7 @@ import { updateAI } from '../game/ai.js';
 import { renderWorld } from '../game/render.js';
 import { createInput } from '../game/input.js';
 import { getDisplayKey } from '../game/keybinds.js';
+import { audioManager } from '../game/audio.js';
 import HUD from './HUD.jsx';
 import TournamentBracket from './TournamentBracket.jsx';
 
@@ -107,6 +108,9 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds
     const input = createInput(keybinds);
     inputRef.current = input;
 
+    // Start background music
+    audioManager.playMusic('battle_theme');
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     canvas.width = ARENA_W;
@@ -144,6 +148,7 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds
       cancelAnimationFrame(raf);
       input.destroy();
       inputRef.current = null;
+      audioManager.stopMusic();
     };
   }, [playerChar, enemyChar, onGameOver]);
 
@@ -151,7 +156,6 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds
     <div className="game-wrap">
       <canvas ref={canvasRef} className="game-canvas" style={canvasStyle} />
       <HUD player={worldRef.current?.player} enemy={worldRef.current?.enemy} keybinds={keybinds} />
-      {tournament && <TournamentBracket tournament={tournament} />}
       <TouchControls inputRef={inputRef} />
     </div>
   );

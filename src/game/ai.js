@@ -19,8 +19,8 @@ export function updateAI(world, self, target) {
   const preferred = PREFERRED_RANGE[ch.id] || 80;
 
   if (ai.decision <= 0) {
-    ai.decision = 16 + Math.floor(Math.random() * 20);
-    if (ai.lastAction > 45 && Math.random() < 0.5) {
+    ai.decision = 30 + Math.floor(Math.random() * 40); // Longer delays, less frequent decisions
+    if (ai.lastAction > 80 && Math.random() < 0.25) { // Much lower ability usage (0.25 instead of 0.5)
       const ability = pickAbility(world, self, target, dist);
       if (ability && tryAction(world, self, ability)) { ai.lastAction = 0; return; }
     }
@@ -41,9 +41,9 @@ export function updateAI(world, self, target) {
       self.input.left = false; self.input.right = false;
     }
   } else {
-    if (self.cooldowns.basic <= 0 && Math.random() < 0.55) {
+    if (self.cooldowns.basic <= 0 && Math.random() < 0.2) { // Much less basic attack spam (0.2 instead of 0.55)
       if (tryAction(world, self, 'basic')) ai.lastAction = 0;
-    } else if (Math.random() < 0.04) {
+    } else if (Math.random() < 0.02) {
       if (Math.random() < 0.5) self.input.left = true; else self.input.right = true;
     }
   }

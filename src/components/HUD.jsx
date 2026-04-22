@@ -6,7 +6,6 @@ function AbilityIcon({ keyLabel, label, cd, isUlt }) {
   return (
     <div className={`ability-icon ${isUlt ? 'ult' : ''} ${ready ? 'ready' : ''}`}>
       <div className="key">{keyLabel}</div>
-      <div className="label">{label}</div>
       {!ready && <div className="cd-mask">{Math.ceil(cd / 60)}</div>}
     </div>
   );
@@ -20,18 +19,17 @@ export default function HUD({ player, enemy, keybinds }) {
     <div className="hud">
       <div className="hud-row">
         <div className="hud-side">
-          <div className="fighter-name"><strong>You</strong>{player.character.name}</div>
+          <div className="fighter-name"><strong>{player.character.name}</strong></div>
           <div className="hp-bar"><div className="fill" style={{ width: `${pPct}%` }} /></div>
           <div className="abilities">
-            <AbilityIcon keyLabel={getDisplayKey('basic', keybinds)} label={player.character.basic.name} cd={player.cooldowns.basic} />
-            <AbilityIcon keyLabel={getDisplayKey('ability1', keybinds)} label={player.character.ability1.name} cd={player.cooldowns.ability1} />
-            <AbilityIcon keyLabel={getDisplayKey('ability2', keybinds)} label={player.character.ability2.name} cd={player.cooldowns.ability2} />
-            <AbilityIcon keyLabel={getDisplayKey('ultimate', keybinds)} label={player.character.ultimate.name} cd={player.cooldowns.ultimate} isUlt />
+            <AbilityIcon keyLabel={getDisplayKey('basic', keybinds)} label="" cd={player.cooldowns.basic} />
+            <AbilityIcon keyLabel={getDisplayKey('ability1', keybinds)} label="" cd={player.cooldowns.ability1} />
+            <AbilityIcon keyLabel={getDisplayKey('ability2', keybinds)} label="" cd={player.cooldowns.ability2} />
+            <AbilityIcon keyLabel={getDisplayKey('ultimate', keybinds)} label="" cd={player.cooldowns.ultimate} isUlt />
           </div>
         </div>
         <div className="hud-side right">
-          <div className="fighter-name">{enemy.character.name}<strong style={{ marginLeft: 8 }}>AI</strong></div>
-          <div style={{ fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--accent)', textAlign: 'right' }}>{enemy.character.role}</div>
+          <div className="fighter-name">{enemy.character.name}</div>
           <div className="hp-bar right"><div className="fill" style={{ width: `${ePct}%` }} /></div>
         </div>
       </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useContext } from 'react';
 import { CHARACTERS } from '../game/characters.js';
 import { drawStickmanPortrait } from '../game/render.js';
 import { getDisplayKey } from '../game/keybinds.js';
+import { audioManager } from '../game/audio.js';
 import { KeybindsContext } from '../contexts/KeybindsContext.js';
 
 const SILHOUETTE_CHARS = ['brute', 'mage', 'assassin'];
@@ -16,8 +17,17 @@ export default function StartScreen({ onStart, onSettings, onTournament }) {
   const { keybinds } = useContext(KeybindsContext) || { keybinds: null };
 
   useEffect(() => {
+    // Play menu music
+    audioManager.playMusic('menu_theme');
+    return () => audioManager.stopMusic();
+  }, []);
+
+  useEffect(() => {
     const onKey = (e) => {
-      if (e.code === 'Space' || e.code === 'Enter') onStart();
+      if (e.code === 'Space' || e.code === 'Enter') {
+        audioManager.playUIClick();
+        onStart();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -75,35 +85,33 @@ export default function StartScreen({ onStart, onSettings, onTournament }) {
         }}
       />
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <h1 className="title">Stickman<br />Duel Arena</h1>
-        <div className="subtitle">A 1v1 fighting game</div>
-        <div className="start-prompt" onClick={onStart} style={{ cursor: 'pointer' }}>
-          Press Space to Begin
+        <h1 className="title">Stickman<br />Arena</h1>
+        <div className="subtitle" style={{ marginTop: 20 }}>1v1 Fighting Game</div>
+        <div className="start-prompt" onClick={() => { audioManager.playUIClick(); onStart(); }} style={{ cursor: 'pointer', marginTop: 50 }}>
+          Press Space to Play
         </div>
-        <div style={{ marginTop: 16, display: 'flex', gap: 12 }}>
-          <button className="btn" onClick={onTournament} style={{ fontSize: 13 }}>
-            🏆 Tournament Mode
+        <div style={{ marginTop: 20, display: 'flex', gap: 16, justifyContent: 'center' }}>
+          <button className="btn" onClick={() => { audioManager.playUIClick(); onTournament(); }} style={{ fontSize: 12 }}>
+            Tournament
           </button>
         </div>
         {keybinds && (
-          <div className="controls-hint">
+          <div className="controls-hint" style={{ marginTop: 40 }}>
             <span>{getDisplayKey('left', keybinds)}</span><span>{getDisplayKey('right', keybinds)}</span> Move &nbsp;·&nbsp;
             <span>{getDisplayKey('jump', keybinds)}</span> Jump &nbsp;·&nbsp;
-            <span>{getDisplayKey('basic', keybinds)}</span> Attack &nbsp;·&nbsp;
-            <span>{getDisplayKey('ability1', keybinds)}</span> Ability 1 &nbsp;·&nbsp;
-            <span>{getDisplayKey('ability2', keybinds)}</span> Ability 2 &nbsp;·&nbsp;
+            <span>{getDisplayKey('basic', keybinds)}</span> Hit &nbsp;·&nbsp;
             <span>{getDisplayKey('ultimate', keybinds)}</span> Ultimate
           </div>
         )}
         <button
           className="btn ghost"
-          onClick={onSettings}
+          onClick={() => { audioManager.playUIClick(); onSettings(); }}
           style={{
             position: 'absolute', top: 24, right: 24,
-            padding: '8px 16px', fontSize: 12
+            padding: '8px 14px', fontSize: 11
           }}
         >
-          ⚙ Settings
+          ⚙
         </button>
       </div>
     </div>
