@@ -1,55 +1,65 @@
-import React, { useState } from 'react'
-import StartScreen from './components/StartScreen.jsx'
-import CharacterSelect from './components/CharacterSelect.jsx'
-import GameScreen from './components/GameScreen.jsx'
-import EndScreen from './components/EndScreen.jsx'
+import React, { useCallback, useState } from 'react';
+import StartScreen from './components/StartScreen.jsx';
+import CharacterSelect from './components/CharacterSelect.jsx';
+import GameScreen from './components/GameScreen.jsx';
+import EndScreen from './components/EndScreen.jsx';
+
+const SCREENS = {
+  START: 'start',
+  SELECT: 'select',
+  GAME: 'game',
+  END: 'end'
+};
 
 export default function App() {
-  const [screen, setScreen] = useState('start') // start | select | game | end
-  const [selectedChar, setSelectedChar] = useState(null)
-  const [result, setResult] = useState(null) // 'win' | 'lose'
+  const [screen, setScreen] = useState(SCREENS.START);
+  const [playerChar, setPlayerChar] = useState(null);
+  const [enemyChar, setEnemyChar] = useState(null);
+  const [result, setResult] = useState(null);
 
-  const handleStart = () => setScreen('select')
+  const handleStart = useCallback(() => setScreen(SCREENS.SELECT), []);
 
-  const handleSelectChar = (charId) => {
-    setSelectedChar(charId)
-    setScreen('game')
-  }
+  const handleSelect = useCallback((charId) => {
+    const pool = ['sword', 'spear', 'mage', 'brute'].filter((c) => c !== charId);
+    const ai = pool[Math.floor(Math.random() * pool.length)];
+    setPlayerChar(charId);
+    setEnemyChar(ai);
+    setScreen(SCREENS.GAME);
+  }, []);
 
-  const handleGameEnd = (outcome) => {
-    setResult(outcome)
-    setScreen('end')
-  }
+  const handleGameOver = useCallback((winner) => {
+    setResult(winner);
+    setScreen(SCREENS.END);
+  }, []);
 
-  const handleRestart = () => {
-    setResult(null)
-    setSelectedChar(null)
-    setScreen('select')
-  }
+  const handleRestart = useCallback(() => {
+    setResult(null);
+    setPlayerChar(null);
+    setEnemyChar(null);
+    setScreen(SCREENS.SELECT);
+  }, []);
 
-  const handleHome = () => {
-    setResult(null)
-    setSelectedChar(null)
-    setScreen('start')
-  }
+  const handleHome = useCallback(() => {
+    setResult(null);
+    setPlayerChar(null);
+    setEnemyChar(null);
+    setScreen(SCREENS.START);
+  }, []);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden', background: '#080c14' }}>
-      {screen === 'start' && <StartScreen onStart={handleStart} />}
-      {screen === 'select' && <CharacterSelect onSelect={handleSelectChar} onBack={handleHome} />}
-      {screen === 'game' && (
+    <div className="app-shell">
+      {screen === SCREENS.START && <StartScreen onStart={handleStart} />}
+      {screen === SCREENS.SELECT && <CharacterSelect onSelect={handleSelect} />}
+      {screen === SCREENS.GAME && (
         <GameScreen
-          selectedChar={selectedChar}
-          onGameEnd={handleGameEnd}
+          playerChar={playerChar}
+          enemyChar={enemyChar}
+          onGameOver={handleGameOver}
         />
       )}
-      {screen === 'end' && (
-        <EndScreen
-          result={result}
-          onRestart={handleRestart}
-          onHome={handleHome}
-        />
+      {screen === SCREENS.END && (
+        <EndScreen result={result} onRestart={handleRestart} onHome={handleHome} />
       )}
     </div>
-  )
+  );
 }
