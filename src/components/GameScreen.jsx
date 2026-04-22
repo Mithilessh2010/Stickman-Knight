@@ -95,7 +95,7 @@ function TouchControls({ inputRef }) {
   );
 }
 
-export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds, tournament }) {
+export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds, tournament, stage = 'rooftop' }) {
   const canvasRef = useRef(null);
   const worldRef = useRef(null);
   const inputRef = useRef(null);
@@ -138,7 +138,7 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds
           setTimeout(() => onGameOver(world.winner), 700);
         }
       }
-      renderWorld(ctx, world);
+      renderWorld(ctx, world, stage, now / 16);
       if (hudTimer > 3) { hudTimer = 0; force(); }
       raf = requestAnimationFrame(loop);
     };

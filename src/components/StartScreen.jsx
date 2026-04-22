@@ -12,7 +12,7 @@ const SILHOUETTE_POSITIONS = [
   { x: 0.85, y: 0.62, scale: 1.6 }
 ];
 
-export default function StartScreen({ onStart, onSettings, onTournament }) {
+export default function StartScreen({ onStart, onSettings, onHelp, onCredits, onTournament }) {
   const canvasRef = useRef(null);
   const { keybinds } = useContext(KeybindsContext) || { keybinds: null };
 
@@ -90,9 +90,15 @@ export default function StartScreen({ onStart, onSettings, onTournament }) {
         <div className="start-prompt" onClick={() => { audioManager.playUIClick(); onStart(); }} style={{ cursor: 'pointer', marginTop: 50 }}>
           Press Space to Play
         </div>
-        <div style={{ marginTop: 20, display: 'flex', gap: 16, justifyContent: 'center' }}>
-          <button className="btn" onClick={() => { audioManager.playUIClick(); onTournament(); }} style={{ fontSize: 12 }}>
+        <div style={{ marginTop: 20, display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button className="btn" onClick={() => { audioManager.playUIClick(); onTournament(); }} style={{ fontSize: 12 }} onMouseEnter={() => audioManager.playUIHover()}>
             Tournament
+          </button>
+          <button className="btn ghost" onClick={() => { audioManager.playUIClick(); onHelp(); }} style={{ fontSize: 12 }} onMouseEnter={() => audioManager.playUIHover()}>
+            ? Help
+          </button>
+          <button className="btn ghost" onClick={() => { audioManager.playUIClick(); onCredits(); }} style={{ fontSize: 12 }} onMouseEnter={() => audioManager.playUIHover()}>
+            © Credits
           </button>
         </div>
         {keybinds && (

@@ -1,6 +1,6 @@
 import { ARENA_W, ARENA_H, GROUND_Y, ENTITY_HEIGHT } from './constants.js';
 
-export function drawBackground(ctx) {
+function drawDefaultBackground(ctx) {
   const g = ctx.createLinearGradient(0, 0, 0, ARENA_H);
   g.addColorStop(0, '#0a0e17');
   g.addColorStop(0.55, '#0d1320');
@@ -46,6 +46,241 @@ export function drawBackground(ctx) {
     ctx.moveTo(0, y);
     ctx.lineTo(ARENA_W, y);
     ctx.stroke();
+  }
+}
+
+function drawRooftopBackground(ctx, time) {
+  const g = ctx.createLinearGradient(0, 0, 0, ARENA_H);
+  g.addColorStop(0, '#0f1419');
+  g.addColorStop(0.5, '#1a2332');
+  g.addColorStop(1, '#0a0d12');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, ARENA_W, ARENA_H);
+
+  // Neon lights
+  ctx.save();
+  for (let i = 0; i < 8; i++) {
+    const x = (i * ARENA_W / 8) + Math.sin(time * 0.01 + i) * 20;
+    const brightness = 0.3 + Math.sin(time * 0.02 + i) * 0.2;
+    ctx.globalAlpha = brightness;
+    ctx.fillStyle = '#7dd3fc';
+    ctx.fillRect(x, 50, 40, 8);
+  }
+  ctx.restore();
+
+  // Ground
+  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
+  gg.addColorStop(0, '#1a1f2e');
+  gg.addColorStop(1, '#0d0f15');
+  ctx.fillStyle = gg;
+  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
+
+  ctx.strokeStyle = 'rgba(125, 211, 252, 0.4)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND_Y);
+  ctx.lineTo(ARENA_W, GROUND_Y);
+  ctx.stroke();
+}
+
+function drawTempleBackground(ctx, time) {
+  const g = ctx.createLinearGradient(0, 0, 0, ARENA_H);
+  g.addColorStop(0, '#1a1410');
+  g.addColorStop(0.5, '#2d2416');
+  g.addColorStop(1, '#0f0a05');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, ARENA_W, ARENA_H);
+
+  // Floating dust
+  ctx.save();
+  ctx.fillStyle = 'rgba(253, 211, 77, 0.08)';
+  for (let i = 0; i < 12; i++) {
+    const x = (i * ARENA_W / 12 + Math.sin(time * 0.005 + i) * 40) % ARENA_W;
+    const y = 100 + Math.sin(time * 0.003 + i * 2) * 80;
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Ground
+  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
+  gg.addColorStop(0, '#3d342a');
+  gg.addColorStop(1, '#1a140a');
+  ctx.fillStyle = gg;
+  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
+
+  ctx.strokeStyle = 'rgba(253, 211, 77, 0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND_Y);
+  ctx.lineTo(ARENA_W, GROUND_Y);
+  ctx.stroke();
+}
+
+function drawMountainBackground(ctx, time) {
+  const g = ctx.createLinearGradient(0, 0, 0, ARENA_H);
+  g.addColorStop(0, '#e0f2fe');
+  g.addColorStop(0.5, '#a5f3fc');
+  g.addColorStop(1, '#164e63');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, ARENA_W, ARENA_H);
+
+  // Snow particles
+  ctx.save();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+  for (let i = 0; i < 20; i++) {
+    const x = (i * ARENA_W / 20 + time * 0.05) % ARENA_W;
+    const y = Math.sin(time * 0.003 + i) * 100 + ARENA_H / 3;
+    ctx.beginPath();
+    ctx.arc(x, y, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Ground
+  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
+  gg.addColorStop(0, '#f0f9ff');
+  gg.addColorStop(1, '#0c4a6e');
+  ctx.fillStyle = gg;
+  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
+
+  ctx.strokeStyle = 'rgba(165, 243, 252, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND_Y);
+  ctx.lineTo(ARENA_W, GROUND_Y);
+  ctx.stroke();
+}
+
+function drawCyberlabBackground(ctx, time) {
+  const g = ctx.createLinearGradient(0, 0, 0, ARENA_H);
+  g.addColorStop(0, '#1e1b4b');
+  g.addColorStop(0.5, '#2d1b69');
+  g.addColorStop(1, '#0f051f');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, ARENA_W, ARENA_H);
+
+  // Glitch lines
+  ctx.save();
+  ctx.strokeStyle = 'rgba(192, 132, 252, 0.2)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 10; i++) {
+    const offset = Math.sin(time * 0.05 + i) * 20;
+    ctx.beginPath();
+    ctx.moveTo(0, ARENA_H / 10 * i + offset);
+    ctx.lineTo(ARENA_W, ARENA_H / 10 * i + offset);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Ground
+  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
+  gg.addColorStop(0, '#3d2d5f');
+  gg.addColorStop(1, '#1a0a3d');
+  ctx.fillStyle = gg;
+  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
+
+  ctx.strokeStyle = 'rgba(192, 132, 252, 0.4)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND_Y);
+  ctx.lineTo(ARENA_W, GROUND_Y);
+  ctx.stroke();
+}
+
+function drawForestBackground(ctx, time) {
+  const g = ctx.createLinearGradient(0, 0, 0, ARENA_H);
+  g.addColorStop(0, '#1f3a2d');
+  g.addColorStop(0.5, '#2d4a3f');
+  g.addColorStop(1, '#0f1f17');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, ARENA_W, ARENA_H);
+
+  // Falling leaves
+  ctx.save();
+  for (let i = 0; i < 15; i++) {
+    const x = (i * ARENA_W / 15 + Math.sin(time * 0.01 + i) * 60) % ARENA_W;
+    const y = (time * 0.2 + i * 50) % ARENA_H;
+    ctx.fillStyle = `rgba(52, 211, 153, ${0.3 + Math.sin(time * 0.02 + i) * 0.2})`;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Ground
+  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
+  gg.addColorStop(0, '#4a6b5d');
+  gg.addColorStop(1, '#1a2d23');
+  ctx.fillStyle = gg;
+  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
+
+  ctx.strokeStyle = 'rgba(52, 211, 153, 0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND_Y);
+  ctx.lineTo(ARENA_W, GROUND_Y);
+  ctx.stroke();
+}
+
+function drawScrapyardBackground(ctx, time) {
+  const g = ctx.createLinearGradient(0, 0, 0, ARENA_H);
+  g.addColorStop(0, '#3d2817');
+  g.addColorStop(0.5, '#5c3d2e');
+  g.addColorStop(1, '#1a0f05');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, ARENA_W, ARENA_H);
+
+  // Dust clouds
+  ctx.save();
+  for (let i = 0; i < 8; i++) {
+    const x = (i * ARENA_W / 8 + Math.sin(time * 0.01 + i) * 50) % ARENA_W;
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = 'rgba(251, 146, 60, 0.2)';
+    ctx.beginPath();
+    ctx.arc(x, 150 + Math.cos(time * 0.01 + i * 2) * 50, 60, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Ground
+  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
+  gg.addColorStop(0, '#6b4423');
+  gg.addColorStop(1, '#2a1505');
+  ctx.fillStyle = gg;
+  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
+
+  ctx.strokeStyle = 'rgba(251, 146, 60, 0.25)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND_Y);
+  ctx.lineTo(ARENA_W, GROUND_Y);
+  ctx.stroke();
+}
+
+export function drawBackground(ctx, stage = 'rooftop', time = 0) {
+  switch (stage) {
+    case 'rooftop':
+      drawRooftopBackground(ctx, time);
+      break;
+    case 'temple':
+      drawTempleBackground(ctx, time);
+      break;
+    case 'mountain':
+      drawMountainBackground(ctx, time);
+      break;
+    case 'cyberlab':
+      drawCyberlabBackground(ctx, time);
+      break;
+    case 'forest':
+      drawForestBackground(ctx, time);
+      break;
+    case 'scrapyard':
+      drawScrapyardBackground(ctx, time);
+      break;
+    default:
+      drawDefaultBackground(ctx);
   }
 }
 
@@ -936,7 +1171,7 @@ export function drawEffects(ctx, world) {
   }
 }
 
-export function renderWorld(ctx, world) {
+export function renderWorld(ctx, world, stage = 'rooftop', time = 0) {
   let sx = 0, sy = 0;
   if (world.shake.mag > 0) {
     sx = (Math.random() - 0.5) * world.shake.mag;
@@ -944,7 +1179,7 @@ export function renderWorld(ctx, world) {
   }
   ctx.save();
   ctx.translate(sx, sy);
-  drawBackground(ctx);
+  drawBackground(ctx, stage, time);
 
   const ents = [world.player, world.enemy].slice().sort((a, b) => a.pos.y - b.pos.y);
   for (const ent of ents) drawStickman(ctx, ent);
