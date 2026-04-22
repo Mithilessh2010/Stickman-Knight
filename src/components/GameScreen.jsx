@@ -4,7 +4,9 @@ import { createWorld, tick, applyPlayerInput } from '../game/engine.js';
 import { updateAI } from '../game/ai.js';
 import { renderWorld } from '../game/render.js';
 import { createInput } from '../game/input.js';
+import { getDisplayKey } from '../game/keybinds.js';
 import HUD from './HUD.jsx';
+import TournamentBracket from './TournamentBracket.jsx';
 
 const MOVE_BUTTONS = [
   { id: 'left',  label: 'L',    action: 'left',  hold: true },
@@ -92,7 +94,7 @@ function TouchControls({ inputRef }) {
   );
 }
 
-export default function GameScreen({ playerChar, enemyChar, onGameOver }) {
+export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds, tournament }) {
   const canvasRef = useRef(null);
   const worldRef = useRef(null);
   const inputRef = useRef(null);
@@ -102,7 +104,7 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver }) {
     const world = createWorld(playerChar, enemyChar);
     worldRef.current = world;
 
-    const input = createInput();
+    const input = createInput(keybinds);
     inputRef.current = input;
 
     const canvas = canvasRef.current;
@@ -148,7 +150,8 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver }) {
   return (
     <div className="game-wrap">
       <canvas ref={canvasRef} className="game-canvas" style={canvasStyle} />
-      <HUD player={worldRef.current?.player} enemy={worldRef.current?.enemy} />
+      <HUD player={worldRef.current?.player} enemy={worldRef.current?.enemy} keybinds={keybinds} />
+      {tournament && <TournamentBracket tournament={tournament} />}
       <TouchControls inputRef={inputRef} />
     </div>
   );

@@ -1,4 +1,5 @@
 import React from 'react';
+import { getDisplayKey } from '../game/keybinds.js';
 
 function AbilityIcon({ keyLabel, label, cd, isUlt }) {
   const ready = cd <= 0;
@@ -11,8 +12,8 @@ function AbilityIcon({ keyLabel, label, cd, isUlt }) {
   );
 }
 
-export default function HUD({ player, enemy }) {
-  if (!player || !enemy) return null;
+export default function HUD({ player, enemy, keybinds }) {
+  if (!player || !enemy || !keybinds) return null;
   const pPct = Math.max(0, player.hp / player.character.maxHp) * 100;
   const ePct = Math.max(0, enemy.hp / enemy.character.maxHp) * 100;
   return (
@@ -22,10 +23,10 @@ export default function HUD({ player, enemy }) {
           <div className="fighter-name"><strong>You</strong>{player.character.name}</div>
           <div className="hp-bar"><div className="fill" style={{ width: `${pPct}%` }} /></div>
           <div className="abilities">
-            <AbilityIcon keyLabel="J" label={player.character.basic.name} cd={player.cooldowns.basic} />
-            <AbilityIcon keyLabel="K" label={player.character.ability1.name} cd={player.cooldowns.ability1} />
-            <AbilityIcon keyLabel="L" label={player.character.ability2.name} cd={player.cooldowns.ability2} />
-            <AbilityIcon keyLabel="U" label={player.character.ultimate.name} cd={player.cooldowns.ultimate} isUlt />
+            <AbilityIcon keyLabel={getDisplayKey('basic', keybinds)} label={player.character.basic.name} cd={player.cooldowns.basic} />
+            <AbilityIcon keyLabel={getDisplayKey('ability1', keybinds)} label={player.character.ability1.name} cd={player.cooldowns.ability1} />
+            <AbilityIcon keyLabel={getDisplayKey('ability2', keybinds)} label={player.character.ability2.name} cd={player.cooldowns.ability2} />
+            <AbilityIcon keyLabel={getDisplayKey('ultimate', keybinds)} label={player.character.ultimate.name} cd={player.cooldowns.ultimate} isUlt />
           </div>
         </div>
         <div className="hud-side right">

@@ -1,14 +1,9 @@
-const KEY_MAP = {
-  KeyA: 'left', ArrowLeft: 'left',
-  KeyD: 'right', ArrowRight: 'right',
-  KeyW: 'jump', ArrowUp: 'jump', Space: 'jump',
-  KeyJ: 'basic',
-  KeyK: 'ability1',
-  KeyL: 'ability2',
-  KeyU: 'ultimate'
-};
+import { DEFAULT_KEYBINDS, buildKeyMap } from './keybinds.js';
 
-export function createInput() {
+export function createInput(keybinds = null) {
+  const finalKeybinds = keybinds || DEFAULT_KEYBINDS;
+  const KEY_MAP = buildKeyMap(finalKeybinds);
+
   const state = {
     left: false, right: false, jump: false,
     basic: false, ability1: false, ability2: false, ultimate: false
@@ -46,3 +41,4 @@ export function createInput() {
     }
   };
 }
+

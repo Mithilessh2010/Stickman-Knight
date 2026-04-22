@@ -1,6 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useContext } from 'react';
 import { CHARACTERS } from '../game/characters.js';
 import { drawStickmanPortrait } from '../game/render.js';
+import { getDisplayKey } from '../game/keybinds.js';
+import { KeybindsContext } from '../contexts/KeybindsContext.js';
 
 const SILHOUETTE_CHARS = ['brute', 'mage', 'assassin'];
 const SILHOUETTE_POSITIONS = [
@@ -9,8 +11,9 @@ const SILHOUETTE_POSITIONS = [
   { x: 0.85, y: 0.62, scale: 1.6 }
 ];
 
-export default function StartScreen({ onStart }) {
+export default function StartScreen({ onStart, onSettings, onTournament }) {
   const canvasRef = useRef(null);
+  const { keybinds } = useContext(KeybindsContext) || { keybinds: null };
 
   useEffect(() => {
     const onKey = (e) => {
@@ -77,14 +80,31 @@ export default function StartScreen({ onStart }) {
         <div className="start-prompt" onClick={onStart} style={{ cursor: 'pointer' }}>
           Press Space to Begin
         </div>
-        <div className="controls-hint">
-          <span>A</span><span>D</span> Move &nbsp;·&nbsp;
-          <span>W</span> Jump &nbsp;·&nbsp;
-          <span>J</span> Attack &nbsp;·&nbsp;
-          <span>K</span> Ability 1 &nbsp;·&nbsp;
-          <span>L</span> Ability 2 &nbsp;·&nbsp;
-          <span>U</span> Ultimate
+        <div style={{ marginTop: 16, display: 'flex', gap: 12 }}>
+          <button className="btn" onClick={onTournament} style={{ fontSize: 13 }}>
+            🏆 Tournament Mode
+          </button>
         </div>
+        {keybinds && (
+          <div className="controls-hint">
+            <span>{getDisplayKey('left', keybinds)}</span><span>{getDisplayKey('right', keybinds)}</span> Move &nbsp;·&nbsp;
+            <span>{getDisplayKey('jump', keybinds)}</span> Jump &nbsp;·&nbsp;
+            <span>{getDisplayKey('basic', keybinds)}</span> Attack &nbsp;·&nbsp;
+            <span>{getDisplayKey('ability1', keybinds)}</span> Ability 1 &nbsp;·&nbsp;
+            <span>{getDisplayKey('ability2', keybinds)}</span> Ability 2 &nbsp;·&nbsp;
+            <span>{getDisplayKey('ultimate', keybinds)}</span> Ultimate
+          </div>
+        )}
+        <button
+          className="btn ghost"
+          onClick={onSettings}
+          style={{
+            position: 'absolute', top: 24, right: 24,
+            padding: '8px 16px', fontSize: 12
+          }}
+        >
+          ⚙ Settings
+        </button>
       </div>
     </div>
   );

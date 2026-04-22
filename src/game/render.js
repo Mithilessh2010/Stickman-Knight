@@ -385,6 +385,58 @@ function drawHeadgear(ctx, ch, chestY, headR, accent, line, f) {
         ctx.fill();
       }
       break;
+    case 'paladin':
+      // holy helm
+      ctx.fillRect(-headR - 2, chestY - headR - 10, headR * 2 + 4, 4);
+      ctx.beginPath();
+      ctx.moveTo(-headR - 2, chestY - headR - 6);
+      ctx.lineTo(-headR - 6, chestY - headR - 16);
+      ctx.lineTo(headR + 6, chestY - headR - 16);
+      ctx.lineTo(headR + 2, chestY - headR - 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = line;
+      ctx.fillRect(-1, chestY - headR - 6, 2, 10);
+      break;
+    case 'berserker':
+      // horned helm
+      ctx.fillRect(-headR, chestY - headR - 8, headR * 2, 3);
+      ctx.beginPath();
+      ctx.moveTo(-headR - 2, chestY - headR - 5);
+      ctx.lineTo(-headR - 8, chestY - headR - 18);
+      ctx.lineTo(-headR - 4, chestY - headR - 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(headR + 2, chestY - headR - 5);
+      ctx.lineTo(headR + 8, chestY - headR - 18);
+      ctx.lineTo(headR + 4, chestY - headR - 5);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'gunslinger':
+      // cowboy hat
+      ctx.beginPath();
+      ctx.ellipse(0, chestY - headR - 8, headR + 6, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(-headR, chestY - headR - 5, headR * 2, 4);
+      break;
+    case 'necromancer':
+      // reaper hood
+      ctx.beginPath();
+      ctx.arc(0, chestY - headR - 1, headR + 3, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = line;
+      ctx.fillRect(-headR - 3, chestY - headR - 1, (headR + 3) * 2, 4);
+      ctx.fillStyle = accent;
+      // glowing eyes
+      ctx.beginPath();
+      ctx.arc(-headR / 2, chestY - headR - 4, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(headR / 2, chestY - headR - 4, 2, 0, Math.PI * 2);
+      ctx.fill();
+      break;
   }
   ctx.restore();
 }
@@ -559,6 +611,67 @@ function drawWeapon(ctx, ch, hx, hy, weaponBase, f, accent) {
       ctx.fillStyle = tomeGrad;
       ctx.beginPath();
       ctx.arc(0, -4, 10, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case 'axe': {
+      // berserker battle axe
+      ctx.fillStyle = '#8b7355';
+      ctx.fillRect(-2 * f, -2, 6 * f, 4);
+      ctx.fillRect(3 * f, -28, 3 * f, 32);
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.moveTo(4 * f, -28);
+      ctx.lineTo(28 * f, -32);
+      ctx.lineTo(28 * f, -20);
+      ctx.lineTo(4 * f, -16);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      break;
+    }
+    case 'guns': {
+      // dual pistols
+      // right gun
+      ctx.fillStyle = '#27272a';
+      ctx.fillRect(4 * f, -6, 28 * f, 4);
+      ctx.fillRect(14 * f, -10, 4 * f, 8);
+      ctx.fillStyle = accent;
+      ctx.fillRect(32 * f, -5, 8 * f, 3);
+      // left gun
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = '#27272a';
+      ctx.fillRect(2 * f, 4, 26 * f, 4);
+      ctx.fillRect(12 * f, 4, 4 * f, 8);
+      ctx.fillStyle = accent;
+      ctx.fillRect(28 * f, 5, 8 * f, 3);
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'scythe': {
+      // necromancer scythe
+      ctx.strokeStyle = '#1f2937';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(-12 * f, 6);
+      ctx.lineTo(28 * f, -32);
+      ctx.stroke();
+      // blade
+      ctx.fillStyle = '#6366f1';
+      ctx.beginPath();
+      ctx.arc(28 * f, -32, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#4f46e5';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#818cf8';
+      ctx.beginPath();
+      ctx.moveTo(28 * f - 6, -32);
+      ctx.lineTo(28 * f + 6, -32);
+      ctx.lineTo(28 * f, -24);
+      ctx.closePath();
       ctx.fill();
       break;
     }

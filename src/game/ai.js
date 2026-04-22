@@ -2,7 +2,8 @@ import { tryAction } from './engine.js';
 
 const PREFERRED_RANGE = {
   sword: 70, spear: 100, mage: 260, brute: 64,
-  assassin: 55, archer: 300, elemental: 220, summoner: 240
+  assassin: 55, archer: 300, elemental: 220, summoner: 240,
+  paladin: 100, berserker: 80, gunslinger: 240, necromancer: 180
 };
 
 export function updateAI(world, self, target) {
@@ -103,6 +104,26 @@ function pickAbility(world, self, target, dist) {
       if (self.cooldowns.ultimate <= 0 && minionCount < 1) choices.push('ultimate');
       break;
     }
+    case 'paladin':
+      if (self.cooldowns.ability1 <= 0 && hp < 0.65) choices.push('ability1');
+      if (self.cooldowns.ability2 <= 0) choices.push('ability2');
+      if (self.cooldowns.ultimate <= 0 && dist < 180) choices.push('ultimate');
+      break;
+    case 'berserker':
+      if (self.cooldowns.ability1 <= 0 && dist < 150) choices.push('ability1');
+      if (self.cooldowns.ability2 <= 0) choices.push('ability2');
+      if (self.cooldowns.ultimate <= 0 && self.berserkStacks >= 3) choices.push('ultimate');
+      break;
+    case 'gunslinger':
+      if (self.cooldowns.ability1 <= 0 && dist < 150) choices.push('ability1');
+      if (self.cooldowns.ability2 <= 0 && dist < 180) choices.push('ability2');
+      if (self.cooldowns.ultimate <= 0 && dist > 100 && dist < 300) choices.push('ultimate');
+      break;
+    case 'necromancer':
+      if (self.cooldowns.ability1 <= 0 && dist < 200) choices.push('ability1');
+      if (self.cooldowns.ability2 <= 0 && dist < 160) choices.push('ability2');
+      if (self.cooldowns.ultimate <= 0 && dist < 150) choices.push('ultimate');
+      break;
   }
   if (!choices.length) return null;
   return choices[Math.floor(Math.random() * choices.length)];

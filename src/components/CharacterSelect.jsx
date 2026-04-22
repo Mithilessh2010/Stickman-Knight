@@ -36,7 +36,7 @@ function Portrait({ charId }) {
   return <canvas ref={ref} width={140} height={160} />;
 }
 
-export default function CharacterSelect({ onSelect }) {
+export default function CharacterSelect({ onSelect, onSettings }) {
   const ids = Object.keys(CHARACTERS);
   return (
     <div className="screen">
@@ -60,6 +60,16 @@ export default function CharacterSelect({ onSelect }) {
           );
         })}
       </div>
+      <button
+        className="btn ghost"
+        onClick={onSettings}
+        style={{
+          position: 'absolute', top: 24, right: 24,
+          padding: '8px 16px', fontSize: 12
+        }}
+      >
+        ⚙ Settings
+      </button>
     </div>
   );
 }

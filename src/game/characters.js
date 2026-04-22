@@ -302,5 +302,155 @@ export const CHARACTERS = {
       cooldown: 760, windup: 30, active: 1, recovery: 22,
       minionHp: 120, minionDamage: 18, minionSpeed: 2.2, minionLife: 720
     }
+  },
+
+  paladin: {
+    id: 'paladin',
+    name: 'Paladin',
+    role: 'Holy Knight',
+    tagline: 'Divine strikes, protective shields, and smite judgment.',
+    color: '#fcd34d',
+    accent: '#ca8a04',
+    weapon: 'sword',
+    maxHp: 110,
+    speed: 2.7,
+    jumpPower: 9.5,
+    basic: {
+      name: 'Smite',
+      type: 'melee',
+      cooldown: 30, windup: 6, active: 6, recovery: 14,
+      damage: 13, range: 60, hitH: 58, knockback: 5
+    },
+    ability1: {
+      name: 'Divine Shield',
+      type: 'shield',
+      cooldown: 140, windup: 4, active: 1, recovery: 8,
+      shieldHp: 40, duration: 240, dr: 0.6
+    },
+    ability2: {
+      name: 'Consecrate',
+      type: 'aura',
+      cooldown: 180, windup: 8, active: 1, recovery: 12,
+      radius: 150, duration: 200, hpRestore: 2, tickRate: 10
+    },
+    ultimate: {
+      name: 'Divine Judgment',
+      type: 'judgment',
+      cooldown: 700, windup: 20, active: 1, recovery: 24,
+      damage: 40, radius: 180, knockback: 10
+    }
+  },
+
+  berserker: {
+    id: 'berserker',
+    name: 'Berserker',
+    role: 'Savage Warrior',
+    tagline: 'Rend enemies, gain fury stacks, and unleash carnage.',
+    color: '#dc2626',
+    accent: '#7f1d1d',
+    weapon: 'axe',
+    maxHp: 135,
+    speed: 2.5,
+    jumpPower: 9,
+    basic: {
+      name: 'Rend',
+      type: 'melee',
+      cooldown: 28, windup: 8, active: 5, recovery: 12,
+      damage: 14, range: 62, hitH: 60, knockback: 5.5
+    },
+    ability1: {
+      name: 'Cleave',
+      type: 'cleave',
+      cooldown: 120, windup: 12, active: 1, recovery: 16,
+      damage: 26, range: 80, radius: 90, knockback: 8
+    },
+    ability2: {
+      name: 'Fury Stack',
+      type: 'buffStack',
+      cooldown: 160, windup: 2, active: 1, recovery: 6,
+      duration: 300, damagePerStack: 1.15, speedPerStack: 1.08, maxStacks: 5
+    },
+    ultimate: {
+      name: 'Carnage',
+      type: 'carnage',
+      cooldown: 680, windup: 10, active: 60, recovery: 20,
+      damage: 12, tickRate: 6, radius: 100, knockback: 6, dmgMul: 1.8
+    }
+  },
+
+  gunslinger: {
+    id: 'gunslinger',
+    name: 'Gunslinger',
+    role: 'Quick Draw',
+    tagline: 'Rapid fire shots, rolling dodge, and precision execution.',
+    color: '#8b5cf6',
+    accent: '#5b21b6',
+    weapon: 'guns',
+    maxHp: 80,
+    speed: 3.8,
+    jumpPower: 11.5,
+    basic: {
+      name: 'Gunshot',
+      type: 'projectile',
+      cooldown: 20, windup: 4, active: 1, recovery: 8,
+      damage: 11, projSpeed: 16, projLife: 95, knockback: 4,
+      projColor: '#a78bfa'
+    },
+    ability1: {
+      name: 'Rolling Dodge',
+      type: 'roll',
+      cooldown: 110, windup: 2, active: 1, recovery: 4,
+      dashSpeed: 14, distance: 140, iframes: 24
+    },
+    ability2: {
+      name: 'Rapid Fire',
+      type: 'rapidFire',
+      cooldown: 150, windup: 6, active: 1, recovery: 14,
+      damage: 9, projSpeed: 15, projLife: 90, count: 3, knockback: 3, projColor: '#a78bfa'
+    },
+    ultimate: {
+      name: 'Execution Shot',
+      type: 'execution',
+      cooldown: 720, windup: 18, active: 1, recovery: 22,
+      damage: 45, projSpeed: 20, projLife: 120, knockback: 12
+    }
+  },
+
+  necromancer: {
+    id: 'necromancer',
+    name: 'Necromancer',
+    role: 'Death Mage',
+    tagline: 'Dark curses, corpse explosions, and the reaper\'s scythe.',
+    color: '#1f2937',
+    accent: '#6366f1',
+    weapon: 'scythe',
+    maxHp: 95,
+    speed: 2.9,
+    jumpPower: 10.2,
+    basic: {
+      name: 'Death Bolt',
+      type: 'projectile',
+      cooldown: 32, windup: 7, active: 1, recovery: 14,
+      damage: 10, projSpeed: 9, projLife: 85, knockback: 2.5,
+      projColor: '#6366f1'
+    },
+    ability1: {
+      name: 'Curse',
+      type: 'curse',
+      cooldown: 140, windup: 8, active: 1, recovery: 10,
+      duration: 180, damageReduction: 0.75, speedReduction: 0.8
+    },
+    ability2: {
+      name: 'Corpse Explosion',
+      type: 'explosion',
+      cooldown: 190, windup: 10, active: 1, recovery: 14,
+      damage: 22, radius: 120, knockback: 7
+    },
+    ultimate: {
+      name: 'Reaper\'s Scythe',
+      type: 'scythe',
+      cooldown: 690, windup: 22, active: 1, recovery: 26,
+      damage: 42, range: 100, radius: 100, knockback: 9
+    }
   }
 };
