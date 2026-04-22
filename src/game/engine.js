@@ -732,8 +732,14 @@ function updateEntity(world, ent) {
   if (ent._cursed && ent._cursed.duration > 0) speedMul *= ent._cursed.speedReduction;
   const baseSpeed = ent.character.speed * speedMul;
   if (canAct && ent.knockTime <= 0) {
-    if (inp.left) ent.vel.vx = -baseSpeed;
-    else if (inp.right) ent.vel.vx = baseSpeed;
+    if (inp.left) {
+      ent.vel.vx = -baseSpeed;
+      ent.facing = -1;
+    }
+    else if (inp.right) {
+      ent.vel.vx = baseSpeed;
+      ent.facing = 1;
+    }
     else ent.vel.vx *= ent.onGround ? FRICTION : AIR_FRICTION;
     if (inp.jump && ent.onGround) {
       ent.vel.vy = -ent.character.jumpPower;
