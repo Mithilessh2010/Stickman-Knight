@@ -1,99 +1,11 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ARENA_W, ARENA_H } from '../game/constants.js';
 import { createWorld, tick, applyPlayerInput } from '../game/engine.js';
 import { updateAI } from '../game/ai.js';
 import { renderWorld } from '../game/render.js';
 import { createInput } from '../game/input.js';
-import { getDisplayKey } from '../game/keybinds.js';
 import { audioManager } from '../game/audio.js';
 import HUD from './HUD.jsx';
-import TournamentBracket from './TournamentBracket.jsx';
-
-const MOVE_BUTTONS = [
-  { id: 'left',  label: 'L',    action: 'left',  hold: true },
-  { id: 'right', label: 'R',    action: 'right', hold: true },
-  { id: 'jump',  label: 'Jump', action: 'jump',  hold: true },
-];
-const ACTION_BUTTONS = [
-  { id: 'basic',    label: 'J', action: 'basic',    hold: false },
-  { id: 'ability1', label: 'K', action: 'ability1', hold: false },
-  { id: 'ability2', label: 'L', action: 'ability2', hold: false },
-  { id: 'ultimate', label: 'U', action: 'ultimate', hold: false, ult: true },
-];
-
-const BTN_BASE = {
-  width: 56, height: 56, borderRadius: 12,
-  background: 'rgba(6,6,8,0.85)',
-  border: '1px solid rgba(0,229,255,0.2)',
-  color: '#f0f0f8',
-  fontFamily: 'var(--font-ui)',
-  fontSize: 14, fontWeight: 700,
-  letterSpacing: '0.1em', textTransform: 'uppercase',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none',
-  backdropFilter: 'blur(4px)', cursor: 'pointer',
-};
-const BTN_ULT = {
-  ...BTN_BASE, width: 64, height: 64,
-  border: '1px solid rgba(255,149,0,0.4)', color: '#ff9500',
-};
-
-function TouchControls({ inputRef }) {
-  const pointerMap = useRef({});
-
-  const press = useCallback((action) => {
-    const inp = inputRef.current;
-    if (!inp) return;
-    inp.addPressed(action);
-  }, [inputRef]);
-
-  const setHeld = useCallback((action, val) => {
-    const inp = inputRef.current;
-    if (!inp) return;
-    inp.state[action] = val;
-  }, [inputRef]);
-
-  const makeHandlers = useCallback((btn) => ({
-    onPointerDown(e) {
-      e.preventDefault();
-      pointerMap.current[e.pointerId] = btn;
-      e.currentTarget.setPointerCapture(e.pointerId);
-      if (btn.hold) setHeld(btn.action, true);
-      else press(btn.action);
-    },
-    onPointerUp(e) {
-      e.preventDefault();
-      const b = pointerMap.current[e.pointerId];
-      if (b && b.hold) setHeld(b.action, false);
-      delete pointerMap.current[e.pointerId];
-    },
-    onPointerCancel(e) {
-      e.preventDefault();
-      const b = pointerMap.current[e.pointerId];
-      if (b && b.hold) setHeld(b.action, false);
-      delete pointerMap.current[e.pointerId];
-    },
-  }), [setHeld, press]);
-
-  return (
-    <div style={{
-      position: 'absolute', bottom: 0, left: 0, right: 0, height: 120,
-      display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-      padding: '0 16px 16px', pointerEvents: 'none', zIndex: 10,
-    }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', pointerEvents: 'auto' }}>
-        {MOVE_BUTTONS.map(btn => (
-          <div key={btn.id} style={BTN_BASE} {...makeHandlers(btn)}>{btn.label}</div>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', pointerEvents: 'auto' }}>
-        {ACTION_BUTTONS.map(btn => (
-          <div key={btn.id} style={btn.ult ? BTN_ULT : BTN_BASE} {...makeHandlers(btn)}>{btn.label}</div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds, tournament, stage = 'rooftop' }) {
   const canvasRef = useRef(null);
@@ -156,7 +68,6 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds
     <div className="game-wrap">
       <canvas ref={canvasRef} className="game-canvas" style={canvasStyle} />
       <HUD player={worldRef.current?.player} enemy={worldRef.current?.enemy} keybinds={keybinds} />
-      <TouchControls inputRef={inputRef} />
     </div>
   );
 }

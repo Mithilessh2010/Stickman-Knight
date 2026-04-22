@@ -3,6 +3,12 @@ import { audioManager } from '../game/audio.js';
 
 export default function EndScreen({ result, onRestart, onHome, isTournament, tournamentWinner }) {
   const [show, setShow] = useState(false);
+  const win = result === 'player';
+  const isChampion = isTournament && tournamentWinner === 'player' && win;
+  const primaryGoesHome = isChampion || (isTournament && !win);
+  const primaryAction = primaryGoesHome ? onHome : onRestart;
+  const primaryLabel = isChampion ? 'Main Menu' : isTournament ? (win ? 'Next Match →' : 'Main Menu') : 'Rematch';
+  const showSecondaryAction = !primaryGoesHome;
 
   useEffect(() => {
     const t = setTimeout(() => setShow(true), 80);
@@ -13,19 +19,17 @@ export default function EndScreen({ result, onRestart, onHome, isTournament, tou
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.code === 'Space' || e.code === 'Enter') { audioManager.playUIClick(); onRestart(); }
+      if (e.code === 'Space' || e.code === 'Enter') { audioManager.playUIClick(); primaryAction(); }
       if (e.code === 'Escape') { audioManager.playUIClick(); onHome(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onRestart, onHome]);
-
-  const win = result === 'player';
-  const isChampion = isTournament && tournamentWinner === 'player' && win;
+  }, [primaryAction, onHome]);
 
   const accentColor = isChampion ? '#ff9500' : win ? '#00ff9d' : '#ff3355';
   const label = isChampion ? 'CHAMPION' : win ? 'VICTORY' : 'DEFEAT';
   const sub = isChampion ? 'Tournament Conquered' : isTournament ? (win ? 'Advancing to next round' : 'Eliminated from tournament') : (win ? 'Opponent defeated' : 'You were defeated');
+  const keyHint = primaryGoesHome ? '[Enter / Space] Main Menu' : '[Enter / Space] Continue · [Esc] Main Menu';
 
   return (
     <div style={{
@@ -66,22 +70,22 @@ export default function EndScreen({ result, onRestart, onHome, isTournament, tou
 
         {/* Buttons */}
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn primary" onClick={() => { audioManager.playUIClick(); onRestart(); }}
+          <button className="btn primary" onClick={() => { audioManager.playUIClick(); primaryAction(); }}
             onMouseEnter={() => audioManager.playUIHover()}
             style={{ background: accentColor, borderColor: accentColor, padding: '14px 40px', fontSize: 15 }}>
-            {isChampion ? 'Main Menu' : isTournament ? (win ? 'Next Match →' : 'Main Menu') : 'Rematch'}
+            {primaryLabel}
           </button>
-          {(!isTournament || !isChampion) && (
+          {showSecondaryAction && (
             <button className="btn ghost" onClick={() => { audioManager.playUIClick(); onHome(); }}
               onMouseEnter={() => audioManager.playUIHover()}
               style={{ padding: '14px 32px', fontSize: 15 }}>
-              Menu
+              Main Menu
             </button>
           )}
         </div>
 
         <div style={{ marginTop: 20, fontSize: 11, color: 'rgba(255,255,255,0.15)', letterSpacing: '0.2em' }}>
-          [Space] Restart · [Esc] Menu
+          {keyHint}
         </div>
       </div>
     </div>

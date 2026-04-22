@@ -42,7 +42,7 @@ export default function App() {
 
     // Escape key for settings
     const handleEsc = (e) => {
-      if (e.code === 'Escape' && screen !== SCREENS.SETTINGS && screen !== SCREENS.START) {
+      if (e.code === 'Escape' && screen !== SCREENS.SETTINGS && screen !== SCREENS.START && screen !== SCREENS.END) {
         setPrevScreen(screen);
         setScreen(SCREENS.SETTINGS);
       }
@@ -82,6 +82,7 @@ export default function App() {
     setResult(null);
     setPlayerChar(null);
     setEnemyChar(null);
+    setTournament(null);
     setScreen(SCREENS.START);
   }, []);
 
@@ -149,7 +150,13 @@ export default function App() {
     <KeybindsContext.Provider value={{ keybinds, setKeybinds }}>
       <div className="app-shell">
         {screen === SCREENS.START && <StartScreen onStart={handleStart} onSettings={() => handleOpenSettings(SCREENS.START)} onHelp={handleOpenHelp} onCredits={handleOpenCredits} onTournament={() => setScreen(SCREENS.TOURNAMENT)} />}
-        {screen === SCREENS.SELECT && <CharacterSelect onSelect={handleSelect} onSettings={() => handleOpenSettings(SCREENS.SELECT)} />}
+        {screen === SCREENS.SELECT && (
+          <CharacterSelect
+            onSelect={handleSelect}
+            onSettings={() => handleOpenSettings(SCREENS.SELECT)}
+            onBack={() => setScreen(SCREENS.START)}
+          />
+        )}
         {screen === SCREENS.STAGE_SELECT && <StageSelect onSelect={handleStageSelect} onBack={() => setScreen(SCREENS.SELECT)} />}
         {screen === SCREENS.TOURNAMENT && <TournamentScreen onStart={handleStartTournament} onBack={() => setScreen(SCREENS.START)} />}
         {screen === SCREENS.GAME && (
