@@ -151,5 +151,156 @@ export const CHARACTERS = {
       cooldown: 660, windup: 0, active: 1, recovery: 0,
       duration: 360, dmgMul: 1.6, speedMul: 1.4, dr: 0.4
     }
+  },
+
+  assassin: {
+    id: 'assassin',
+    name: 'Assassin',
+    role: 'Shadow',
+    tagline: 'Vanish, flank, and execute with lethal chain-daggers.',
+    color: '#a78bfa',
+    accent: '#6d28d9',
+    weapon: 'daggers',
+    maxHp: 78,
+    speed: 4.2,
+    jumpPower: 12,
+    basic: {
+      name: 'Stab',
+      type: 'melee',
+      cooldown: 22, windup: 3, active: 5, recovery: 10,
+      damage: 9, range: 48, hitH: 50, knockback: 2.5
+    },
+    ability1: {
+      name: 'Shadow Step',
+      type: 'shadowStep',
+      cooldown: 120, windup: 2, active: 1, recovery: 8,
+      distance: 180, iframes: 20
+    },
+    ability2: {
+      name: 'Smoke Bomb',
+      type: 'smokeBomb',
+      cooldown: 200, windup: 4, active: 1, recovery: 10,
+      stealthDuration: 150, speedBoost: 1.5
+    },
+    ultimate: {
+      name: 'Death Mark',
+      type: 'deathMark',
+      cooldown: 680, windup: 8, active: 1, recovery: 16,
+      damage: 44, range: 60, hitH: 70, knockback: 6
+    }
+  },
+
+  archer: {
+    id: 'archer',
+    name: 'Archer',
+    role: 'Marksman',
+    tagline: 'Pinpoint arrows, explosive shots, and a storm of volleys.',
+    color: '#6ee7b7',
+    accent: '#059669',
+    weapon: 'bow',
+    maxHp: 85,
+    speed: 3.1,
+    jumpPower: 11,
+    basic: {
+      name: 'Arrow',
+      type: 'projectile',
+      cooldown: 28, windup: 9, active: 1, recovery: 12,
+      damage: 12, projSpeed: 14, projLife: 100, knockback: 3,
+      projColor: '#6ee7b7'
+    },
+    ability1: {
+      name: 'Piercing Shot',
+      type: 'piercingShot',
+      cooldown: 160, windup: 14, active: 1, recovery: 18,
+      damage: 22, projSpeed: 18, projLife: 120, knockback: 7
+    },
+    ability2: {
+      name: 'Backflip',
+      type: 'backflip',
+      cooldown: 130, windup: 2, active: 1, recovery: 6,
+      flipVy: -13, flipVx: -7
+    },
+    ultimate: {
+      name: 'Arrow Storm',
+      type: 'arrowStorm',
+      cooldown: 740, windup: 16, active: 100, recovery: 20,
+      damage: 9, count: 12, projSpeed: 13, knockback: 3
+    }
+  },
+
+  elemental: {
+    id: 'elemental',
+    name: 'Elementalist',
+    role: 'Fire Mage',
+    tagline: 'Scorching flames, lava pools, and a volcanic eruption.',
+    color: '#fb923c',
+    accent: '#c2410c',
+    weapon: 'flame',
+    maxHp: 88,
+    speed: 3.0,
+    jumpPower: 10.5,
+    basic: {
+      name: 'Fireball',
+      type: 'projectile',
+      cooldown: 30, windup: 7, active: 1, recovery: 16,
+      damage: 11, projSpeed: 10, projLife: 70, knockback: 3.5,
+      projColor: '#fb923c'
+    },
+    ability1: {
+      name: 'Flame Dash',
+      type: 'flameDash',
+      cooldown: 150, windup: 4, active: 22, recovery: 12,
+      damage: 10, range: 50, hitH: 60, knockback: 5, dashSpeed: 10
+    },
+    ability2: {
+      name: 'Lava Pool',
+      type: 'lavaPool',
+      cooldown: 220, windup: 10, active: 1, recovery: 14,
+      damage: 6, radius: 80, duration: 180
+    },
+    ultimate: {
+      name: 'Eruption',
+      type: 'eruption',
+      cooldown: 710, windup: 26, active: 1, recovery: 28,
+      damage: 36, radius: 160, knockback: 11
+    }
+  },
+
+  summoner: {
+    id: 'summoner',
+    name: 'Summoner',
+    role: 'Commander',
+    tagline: 'Raise bone warriors, shield walls, and an undead titan.',
+    color: '#34d399',
+    accent: '#065f46',
+    weapon: 'tome',
+    maxHp: 90,
+    speed: 2.8,
+    jumpPower: 10,
+    basic: {
+      name: 'Soul Bolt',
+      type: 'projectile',
+      cooldown: 34, windup: 8, active: 1, recovery: 15,
+      damage: 9, projSpeed: 8, projLife: 85, knockback: 2,
+      projColor: '#34d399'
+    },
+    ability1: {
+      name: 'Summon Minion',
+      type: 'summon',
+      cooldown: 180, windup: 12, active: 1, recovery: 16,
+      minionHp: 40, minionDamage: 8, minionSpeed: 2.8, minionLife: 480
+    },
+    ability2: {
+      name: 'Bone Shield',
+      type: 'boneShield',
+      cooldown: 230, windup: 6, active: 1, recovery: 10,
+      shieldHp: 35, duration: 300
+    },
+    ultimate: {
+      name: 'Titan Rise',
+      type: 'titan',
+      cooldown: 760, windup: 30, active: 1, recovery: 22,
+      minionHp: 120, minionDamage: 18, minionSpeed: 2.2, minionLife: 720
+    }
   }
 };

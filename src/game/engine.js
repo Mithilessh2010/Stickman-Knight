@@ -26,6 +26,8 @@ export function createEntity(charId, x, facing, isPlayer) {
     knockTime: 0,
     parryActive: 0,
     frozen: 0,
+    stealth: 0,
+    shield: null,
     buff: null,
     dead: false,
     hitId: 0,
@@ -44,6 +46,8 @@ export function createWorld(playerId, enemyId) {
     effects: [],
     shockwaves: [],
     fallingObjects: [],
+    lavaPools: [],
+    minions: [],
     shake: { mag: 0, time: 0 },
     overTime: 0,
     winner: null,
@@ -77,6 +81,26 @@ export function tryAction(world, ent, key) {
     addShake(world, 6, 12);
   } else if (def.type === 'parry') {
     ent.parryActive = def.active;
+  } else if (def.type === 'backflip') {
+    ent.vel.vy = def.flipVy;
+    ent.vel.vx = def.flipVx * ent.facing;
+    ent.onGround = false;
+    ent.iframes = 18;
+  } else if (def.type === 'smokeBomb') {
+    ent.stealth = def.stealthDuration;
+    ent.stealthSpeed = def.speedBoost;
+    ent.iframes = 24;
+    spawnRing(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, '#4b5563', 70);
+    for (let i = 0; i < 16; i++) {
+      spawnTrail(world, ent.pos.x + (Math.random()-0.5)*40, ent.pos.y - 20 - Math.random()*50, '#6b7280');
+    }
+  } else if (def.type === 'shadowStep') {
+    const targetX = clampX(ent.pos.x + ent.facing * def.distance);
+    for (let i = 0; i < 8; i++) {
+      spawnTrail(world, ent.pos.x + (targetX - ent.pos.x) * (i / 8), ent.pos.y - ENTITY_HEIGHT / 2, ent.character.color);
+    }
+    ent.pos.x = targetX;
+    ent.iframes = def.iframes || 16;
   }
   return true;
 }
@@ -100,6 +124,10 @@ function progressAction(world, ent) {
     }
   }
   if (a.phase === 'recovery' && a.phaseTime >= def.recovery) {
+    if (def.type === 'arrowStorm') {
+      ent._stormTick = 0;
+      ent._stormDef = null;
+    }
     ent.action = null;
     ent.state = 'idle';
     ent.stateTime = 0;
@@ -121,15 +149,18 @@ function onActiveEnter(world, ent) {
     case 'projectile': {
       const px = cx + f * 32;
       const py = cy - 4;
+      const id = ent.character.id;
+      const isBolt = id === 'mage' || id === 'elemental' || id === 'summoner';
+      const isArrow = id === 'archer';
       world.projectiles.push({
-        kind: ent.character.id === 'mage' ? 'bolt' : 'spear',
+        kind: isBolt ? 'bolt' : isArrow ? 'arrow' : 'spear',
         owner: ent, hitId: ent.hitId,
         x: px, y: py, vx: def.projSpeed * f, vy: 0,
         life: def.projLife,
         damage: scaledDamage(ent, def.damage),
         knockback: def.knockback,
         color: def.projColor || ent.character.color,
-        radius: ent.character.id === 'mage' ? 8 : 6,
+        radius: isBolt ? 8 : 6,
         rot: 0
       });
       break;
@@ -183,6 +214,83 @@ function onActiveEnter(world, ent) {
       }
       break;
     }
+    case 'piercingShot': {
+      const f2 = ent.facing;
+      world.projectiles.push({
+        kind: 'arrow-pierce', owner: ent, hitId: ent.hitId,
+        x: ent.pos.x + f2 * 32, y: ent.pos.y - ENTITY_HEIGHT / 2,
+        vx: def.projSpeed * f2, vy: 0,
+        life: def.projLife, damage: scaledDamage(ent, def.damage),
+        knockback: def.knockback, color: '#ffffff',
+        radius: 7, piercing: true, hitSet: new Set()
+      });
+      addShake(world, 4, 8);
+      break;
+    }
+    case 'arrowStorm': {
+      ent._stormTick = 0;
+      ent._stormDef = def;
+      break;
+    }
+    case 'deathMark': {
+      const target3 = otherOf(world, ent);
+      if (target3 && !target3.dead) {
+        const dx3 = target3.pos.x - ent.pos.x;
+        const dy3 = (target3.pos.y - ENTITY_HEIGHT / 2) - (ent.pos.y - ENTITY_HEIGHT / 2);
+        if (Math.abs(dx3) <= def.range && Math.abs(dy3) <= def.hitH / 2) {
+          applyHit(world, ent, target3, scaledDamage(ent, def.damage), def.knockback);
+          spawnRing(world, target3.pos.x, target3.pos.y - ENTITY_HEIGHT / 2, '#a78bfa', 90);
+          addShake(world, 10, 16);
+        }
+      }
+      break;
+    }
+    case 'flameDash': {
+      ent.vel.vx = def.dashSpeed * ent.facing;
+      ent.iframes = 8;
+      break;
+    }
+    case 'lavaPool': {
+      world.lavaPools = world.lavaPools || [];
+      world.lavaPools.push({
+        x: ent.pos.x, y: GROUND_Y,
+        radius: def.radius, damage: def.damage,
+        duration: def.duration, owner: ent, hitTimer: 0
+      });
+      spawnRing(world, ent.pos.x, GROUND_Y, '#fb923c', def.radius);
+      break;
+    }
+    case 'eruption': {
+      const target4 = otherOf(world, ent);
+      const tx4 = target4 ? target4.pos.x : ent.pos.x + ent.facing * 200;
+      world.fallingObjects.push({
+        kind: 'eruption', x: tx4, y: -80, vy: 0, fall: 11, target: GROUND_Y,
+        owner: ent, hitId: ent.hitId, damage: scaledDamage(ent, def.damage),
+        radius: def.radius, knockback: def.knockback, life: 200
+      });
+      break;
+    }
+    case 'summon':
+    case 'titan': {
+      const side = ent.facing;
+      const mx = clampX(ent.pos.x + side * 80);
+      world.minions = world.minions || [];
+      world.minions.push({
+        owner: ent, x: mx, y: GROUND_Y, vx: 0, vy: 0,
+        hp: def.minionHp, maxHp: def.minionHp, damage: def.minionDamage,
+        speed: def.minionSpeed, life: def.minionLife,
+        isTitan: def.type === 'titan', attackCd: 0, dead: false,
+        animTime: 0, facing: side
+      });
+      spawnRing(world, mx, GROUND_Y, ent.character.color, def.type === 'titan' ? 80 : 50);
+      addShake(world, def.type === 'titan' ? 10 : 4, 12);
+      break;
+    }
+    case 'boneShield': {
+      ent.shield = { hp: def.shieldHp, maxHp: def.shieldHp, duration: def.duration };
+      spawnRing(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, '#34d399', 60);
+      break;
+    }
     case 'slam': {
       world.shockwaves.push({
         owner: ent, hitId: ent.hitId, x: ent.pos.x, y: GROUND_Y,
@@ -215,10 +323,32 @@ function onActiveTick(world, ent) {
   switch (def.type) {
     case 'melee':
     case 'dashStrike':
-    case 'charge': {
+    case 'charge':
+    case 'flameDash': {
       const box = meleeHitbox(ent, def);
       if (rectsOverlap(box, entityBox(other))) {
         applyHit(world, ent, other, scaledDamage(ent, def.damage), def.knockback);
+      }
+      if (def.type === 'flameDash' && a.phaseTime % 3 === 0) {
+        spawnTrail(world, ent.pos.x, ent.pos.y - 20, '#fb923c');
+        spawnTrail(world, ent.pos.x, ent.pos.y - 40, '#fbbf24');
+      }
+      break;
+    }
+    case 'arrowStorm': {
+      ent._stormTick = (ent._stormTick || 0) + 1;
+      if (ent._stormTick % 8 === 0) {
+        const sd = ent._stormDef;
+        const f3 = ent.facing;
+        const spread = (Math.random() - 0.5) * 4;
+        world.projectiles.push({
+          kind: 'arrow', owner: ent, hitId: ent.hitId + ent._stormTick,
+          x: ent.pos.x + f3 * 32, y: ent.pos.y - ENTITY_HEIGHT / 2 - 10,
+          vx: sd.projSpeed * f3 + spread, vy: (Math.random() - 0.5) * 2,
+          life: 90, damage: scaledDamage(ent, sd.damage),
+          knockback: sd.knockback, color: ent.character.color,
+          radius: 6, piercing: false
+        });
       }
       break;
     }
@@ -324,6 +454,14 @@ function applyHit(world, attacker, victim, damage, knockback) {
   if (victim.buff && victim.buff.duration > 0 && victim.buff.dr) {
     damage *= (1 - victim.buff.dr);
   }
+  // bone shield absorbs damage
+  if (victim.shield && victim.shield.hp > 0) {
+    const absorbed = Math.min(victim.shield.hp, damage);
+    victim.shield.hp -= absorbed;
+    damage -= absorbed;
+    spawnRing(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, '#34d399', 40);
+    if (damage <= 0) return;
+  }
 
   victim.hp -= damage;
   victim.iframes = 14;
@@ -361,6 +499,11 @@ function updateEntity(world, ent) {
   if (ent.knockTime > 0) ent.knockTime -= 1;
   if (ent.parryActive > 0) ent.parryActive -= 1;
   if (ent.frozen > 0) ent.frozen -= 1;
+  if (ent.stealth > 0) ent.stealth -= 1;
+  if (ent.shield) {
+    ent.shield.duration -= 1;
+    if (ent.shield.duration <= 0) ent.shield = null;
+  }
   if (ent.buff) {
     ent.buff.duration -= 1;
     if (ent.buff.duration <= 0) ent.buff = null;
@@ -392,6 +535,7 @@ function updateEntity(world, ent) {
   }
 
   let speedMul = ent.buff ? ent.buff.speedMul : 1;
+  if (ent.stealth > 0 && ent.character.id === 'assassin') speedMul *= (ent.character.ability2.speedBoost || 1.5);
   const baseSpeed = ent.character.speed * speedMul;
   if (canAct && ent.knockTime <= 0) {
     if (inp.left) ent.vel.vx = -baseSpeed;
@@ -442,18 +586,121 @@ function updateProjectiles(world) {
     p.life -= 1;
     p.rot = (p.rot || 0) + 0.2;
     spawnTrail(world, p.x, p.y, p.color);
-    const target = otherOf(world, p.owner);
-    if (target && !target.dead) {
-      const tb = entityBox(target);
-      if (p.x > tb.x && p.x < tb.x + tb.w && p.y > tb.y && p.y < tb.y + tb.h) {
-        applyHit(world, p.owner, target, p.damage, p.knockback);
-        spawnHitBurst(world, p.x, p.y, p.color, 14);
-        world.projectiles.splice(i, 1);
-        continue;
+
+    if (p.piercing) {
+      // piercing arrows hit both entities
+      const targets = [world.player, world.enemy].filter(e => e !== p.owner && !e.dead);
+      for (const target of targets) {
+        if (p.hitSet && p.hitSet.has(target.id)) continue;
+        const tb = entityBox(target);
+        if (p.x > tb.x && p.x < tb.x + tb.w && p.y > tb.y && p.y < tb.y + tb.h) {
+          applyHit(world, p.owner, target, p.damage, p.knockback);
+          spawnHitBurst(world, p.x, p.y, p.color, 12);
+          if (p.hitSet) p.hitSet.add(target.id);
+        }
+      }
+    } else {
+      const target = otherOf(world, p.owner);
+      if (target && !target.dead) {
+        const tb = entityBox(target);
+        if (p.x > tb.x && p.x < tb.x + tb.w && p.y > tb.y && p.y < tb.y + tb.h) {
+          applyHit(world, p.owner, target, p.damage, p.knockback);
+          spawnHitBurst(world, p.x, p.y, p.color, 14);
+          world.projectiles.splice(i, 1);
+          continue;
+        }
       }
     }
     if (p.life <= 0 || p.x < -40 || p.x > ARENA_W + 40 || p.y > GROUND_Y + 20) {
       world.projectiles.splice(i, 1);
+    }
+  }
+}
+
+function updateLavaPools(world) {
+  if (!world.lavaPools) return;
+  for (let i = world.lavaPools.length - 1; i >= 0; i--) {
+    const pool = world.lavaPools[i];
+    pool.duration -= 1;
+    pool.hitTimer = (pool.hitTimer || 0) + 1;
+    // emit fire particles
+    if (world.tick % 4 === 0) {
+      spawnTrail(world, pool.x + (Math.random() - 0.5) * pool.radius * 1.2, GROUND_Y - 4, '#fb923c');
+      spawnTrail(world, pool.x + (Math.random() - 0.5) * pool.radius, GROUND_Y - 8, '#fbbf24');
+    }
+    // damage anyone standing in it every 20 ticks
+    if (pool.hitTimer >= 20) {
+      pool.hitTimer = 0;
+      const targets = [world.player, world.enemy].filter(e => e !== pool.owner && !e.dead);
+      for (const t of targets) {
+        if (t.onGround && Math.abs(t.pos.x - pool.x) <= pool.radius) {
+          applyHit(world, pool.owner, t, pool.damage, 1);
+        }
+      }
+    }
+    if (pool.duration <= 0) world.lavaPools.splice(i, 1);
+  }
+}
+
+function updateMinions(world) {
+  if (!world.minions) return;
+  for (let i = world.minions.length - 1; i >= 0; i--) {
+    const m = world.minions[i];
+    if (m.dead) { world.minions.splice(i, 1); continue; }
+    m.life -= 1;
+    m.animTime += 1;
+    m.attackCd = Math.max(0, m.attackCd - 1);
+    if (m.life <= 0) { m.dead = true; continue; }
+
+    // find enemy target (opposite of owner)
+    const target = m.owner === world.player ? world.enemy : world.player;
+    if (!target || target.dead) continue;
+
+    const dx = target.pos.x - m.x;
+    const dist = Math.abs(dx);
+    m.facing = dx >= 0 ? 1 : -1;
+
+    const attackRange = m.isTitan ? 80 : 55;
+    if (dist > attackRange) {
+      m.vx = m.speed * m.facing;
+    } else {
+      m.vx *= 0.8;
+      if (m.attackCd <= 0) {
+        m.attackCd = m.isTitan ? 55 : 70;
+        applyHit(world, m.owner, target, m.damage, m.isTitan ? 8 : 4);
+        spawnHitBurst(world, target.pos.x, target.pos.y - ENTITY_HEIGHT / 2, m.owner.character.color, 10);
+      }
+    }
+
+    m.vy += GRAVITY;
+    if (m.vy > MAX_FALL) m.vy = MAX_FALL;
+    m.x += m.vx;
+    m.y += m.vy;
+    if (m.y >= GROUND_Y) { m.y = GROUND_Y; m.vy = 0; }
+    m.x = clampX(m.x);
+    m.vx *= 0.85;
+  }
+}
+
+export function tick(world) {
+  world.tick += 1;
+  updateEntity(world, world.player);
+  updateEntity(world, world.enemy);
+  updateProjectiles(world);
+  updateShockwaves(world);
+  updateFalling(world);
+  updateLavaPools(world);
+  updateMinions(world);
+  updateParticles(world);
+  if (world.shake.time > 0) world.shake.time -= 1;
+  else world.shake.mag = 0;
+
+  if (!world.winner) {
+    if (world.player.dead || world.enemy.dead) world.overTime += 1;
+    if (world.overTime > 90) {
+      if (world.player.dead && !world.enemy.dead) world.winner = 'enemy';
+      else if (world.enemy.dead && !world.player.dead) world.winner = 'player';
+      else if (world.player.dead && world.enemy.dead) world.winner = 'enemy';
     }
   }
 }
@@ -483,7 +730,7 @@ function updateFalling(world) {
     if (f.delay && f.delay > 0) { f.delay -= 1; continue; }
     f.y += f.fall;
     f.fall = Math.min(f.fall + 0.3, 18);
-    spawnTrail(world, f.x, f.y, f.kind === 'meteor' ? '#fbbf24' : '#fde68a');
+    spawnTrail(world, f.x, f.y, f.kind === 'meteor' ? '#fbbf24' : f.kind === 'eruption' ? '#fb923c' : '#fde68a');
     if (f.y >= f.target) {
       const target = otherOf(world, f.owner);
       if (target && !target.dead) {
@@ -493,31 +740,11 @@ function updateFalling(world) {
           applyHit(world, f.owner, target, f.damage, f.knockback);
         }
       }
-      spawnRing(world, f.x, f.target, f.kind === 'meteor' ? '#fbbf24' : '#fde68a', f.radius);
-      spawnHitBurst(world, f.x, f.target, f.kind === 'meteor' ? '#fbbf24' : '#fde68a', 22);
-      addShake(world, f.kind === 'meteor' ? 14 : 6, 14);
+      const impactColor = f.kind === 'meteor' ? '#fbbf24' : f.kind === 'eruption' ? '#fb923c' : '#fde68a';
+      spawnRing(world, f.x, f.target, impactColor, f.radius);
+      spawnHitBurst(world, f.x, f.target, impactColor, 22);
+      addShake(world, f.kind === 'meteor' || f.kind === 'eruption' ? 14 : 6, 14);
       world.fallingObjects.splice(i, 1);
-    }
-  }
-}
-
-export function tick(world) {
-  world.tick += 1;
-  updateEntity(world, world.player);
-  updateEntity(world, world.enemy);
-  updateProjectiles(world);
-  updateShockwaves(world);
-  updateFalling(world);
-  updateParticles(world);
-  if (world.shake.time > 0) world.shake.time -= 1;
-  else world.shake.mag = 0;
-
-  if (!world.winner) {
-    if (world.player.dead || world.enemy.dead) world.overTime += 1;
-    if (world.overTime > 90) {
-      if (world.player.dead && !world.enemy.dead) world.winner = 'enemy';
-      else if (world.enemy.dead && !world.player.dead) world.winner = 'player';
-      else if (world.player.dead && world.enemy.dead) world.winner = 'enemy';
     }
   }
 }

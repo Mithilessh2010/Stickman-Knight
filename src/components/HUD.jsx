@@ -30,6 +30,7 @@ export default function HUD({ player, enemy }) {
         </div>
         <div className="hud-side right">
           <div className="fighter-name">{enemy.character.name}<strong style={{ marginLeft: 8 }}>AI</strong></div>
+          <div style={{ fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--accent)', textAlign: 'right' }}>{enemy.character.role}</div>
           <div className="hp-bar right"><div className="fill" style={{ width: `${ePct}%` }} /></div>
         </div>
       </div>

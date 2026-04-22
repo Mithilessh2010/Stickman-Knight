@@ -20,7 +20,7 @@ export default function App() {
   const handleStart = useCallback(() => setScreen(SCREENS.SELECT), []);
 
   const handleSelect = useCallback((charId) => {
-    const pool = ['sword', 'spear', 'mage', 'brute'].filter((c) => c !== charId);
+    const pool = ['sword', 'spear', 'mage', 'brute', 'assassin', 'archer', 'elemental', 'summoner'].filter((c) => c !== charId);
     const ai = pool[Math.floor(Math.random() * pool.length)];
     setPlayerChar(charId);
     setEnemyChar(ai);

@@ -95,9 +95,47 @@ function bodyPose(ent) {
     } else if (def.type === 'parry') {
       weaponAngle = -0.5;
       armSwing = -0.3;
-    } else if (def.type === 'teleport') {
+    } else if (def.type === 'shadowStep' || def.type === 'teleport') {
       armSwing = -0.6;
       weaponAngle = -0.8;
+    } else if (def.type === 'smokeBomb') {
+      armSwing = -1.0;
+      weaponAngle = -0.6;
+      bob = -2;
+    } else if (def.type === 'deathMark') {
+      armSwing = 1.2;
+      weaponAngle = 1.4;
+      bob = Math.sin(p * Math.PI) * -3;
+    } else if (def.type === 'flameDash') {
+      weaponAngle = 1.0;
+      armSwing = 0.8;
+      legSwing = 0.6;
+    } else if (def.type === 'lavaPool') {
+      armSwing = -0.8;
+      weaponAngle = -1.0;
+      bob = -2;
+    } else if (def.type === 'eruption') {
+      armSwing = -1.4;
+      weaponAngle = -1.6;
+      bob = -4;
+    } else if (def.type === 'piercingShot') {
+      weaponAngle = lerp(-0.6, 0.6, Math.min(1, p * 1.5));
+      armSwing = -1.2;
+      bob = Math.sin(p * Math.PI) * -2;
+    } else if (def.type === 'arrowStorm') {
+      weaponAngle = Math.sin(a.phaseTime * 0.15) * 0.4;
+      armSwing = -0.8;
+    } else if (def.type === 'backflip') {
+      weaponAngle = -0.5;
+      armSwing = -0.6;
+      legSwing = -0.4;
+    } else if (def.type === 'summon' || def.type === 'titan') {
+      armSwing = -1.2;
+      weaponAngle = -1.0;
+      bob = Math.sin(p * Math.PI) * -3;
+    } else if (def.type === 'boneShield') {
+      armSwing = -0.8;
+      weaponAngle = -0.5;
     } else if (def.type === 'nova') {
       armSwing = -1.2;
       weaponAngle = -1.4;
@@ -140,6 +178,13 @@ export function drawStickman(ctx, ent) {
   ctx.save();
   ctx.translate(x, groundY + pose.bob);
   ctx.rotate(pose.tilt);
+
+  // stealth — assassin fades out; player sees themselves at 50%, enemy sees at 15%
+  if (ent.stealth > 0) {
+    const targetAlpha = ent.isPlayer ? 0.5 : 0.15;
+    const stealthAlpha = Math.min(targetAlpha, ent.stealth / 150 * targetAlpha);
+    ctx.globalAlpha = stealthAlpha;
+  }
 
   if (ent.buff && ent.buff.duration > 0) {
     ctx.save();
@@ -235,6 +280,21 @@ export function drawStickman(ctx, ent) {
     ctx.stroke();
     ctx.restore();
   }
+
+  if (ent.shield && ent.shield.hp > 0) {
+    ctx.save();
+    const shieldAlpha = 0.5 + Math.sin(ent.animTime * 0.2) * 0.15;
+    ctx.globalAlpha = shieldAlpha;
+    ctx.strokeStyle = '#34d399';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, groundY - ENTITY_HEIGHT / 2, 38, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = shieldAlpha * 0.25;
+    ctx.fillStyle = '#34d399';
+    ctx.fill();
+    ctx.restore();
+  }
 }
 
 function drawHeadgear(ctx, ch, chestY, headR, accent, line, f) {
@@ -280,6 +340,50 @@ function drawHeadgear(ctx, ch, chestY, headR, accent, line, f) {
       ctx.lineTo(headR - 2, chestY - headR - 8);
       ctx.closePath();
       ctx.fill();
+      break;
+    case 'assassin':
+      // hood
+      ctx.beginPath();
+      ctx.arc(0, chestY - headR - 2, headR + 3, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = line;
+      ctx.fillRect(-headR - 2, chestY - headR - 2, (headR + 2) * 2, 5);
+      break;
+    case 'archer':
+      // ranger cap
+      ctx.beginPath();
+      ctx.moveTo(-headR - 3, chestY - headR);
+      ctx.lineTo(headR + 3, chestY - headR);
+      ctx.lineTo(headR, chestY - headR - 8);
+      ctx.lineTo(4 * f, chestY - headR - 18);
+      ctx.lineTo(-headR + 2, chestY - headR - 8);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'elemental':
+      // flame crown
+      for (let fi = -1; fi <= 1; fi++) {
+        ctx.fillStyle = fi === 0 ? '#fbbf24' : accent;
+        ctx.beginPath();
+        ctx.moveTo(fi * headR * 0.6 - 3, chestY - headR - 2);
+        ctx.lineTo(fi * headR * 0.6, chestY - headR - 10 - Math.abs(fi) * 4);
+        ctx.lineTo(fi * headR * 0.6 + 3, chestY - headR - 2);
+        ctx.closePath();
+        ctx.fill();
+      }
+      break;
+    case 'summoner':
+      // bone crown
+      ctx.fillRect(-headR, chestY - headR - 10, headR * 2, 4);
+      for (let si = 0; si < 3; si++) {
+        const sx = -headR + si * headR;
+        ctx.beginPath();
+        ctx.moveTo(sx - 2, chestY - headR - 6);
+        ctx.lineTo(sx, chestY - headR - 18);
+        ctx.lineTo(sx + 2, chestY - headR - 6);
+        ctx.closePath();
+        ctx.fill();
+      }
       break;
   }
   ctx.restore();
@@ -363,6 +467,101 @@ function drawWeapon(ctx, ch, hx, hy, weaponBase, f, accent) {
         ctx.fill();
       }
       break;
+    case 'daggers':
+      // dual daggers — front dagger
+      ctx.fillStyle = '#c4b5fd';
+      ctx.beginPath();
+      ctx.moveTo(6 * f, -2);
+      ctx.lineTo(34 * f, -1);
+      ctx.lineTo(38 * f, 0);
+      ctx.lineTo(34 * f, 1);
+      ctx.lineTo(6 * f, 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = accent;
+      ctx.fillRect(2 * f, -4, 6 * f, 8);
+      // back dagger offset
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = '#c4b5fd';
+      ctx.beginPath();
+      ctx.moveTo(4 * f, -8);
+      ctx.lineTo(30 * f, -7);
+      ctx.lineTo(34 * f, -6);
+      ctx.lineTo(30 * f, -5);
+      ctx.lineTo(4 * f, -6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      break;
+    case 'bow': {
+      // bow body
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 22, -0.9, 0.9, false);
+      ctx.stroke();
+      // string
+      ctx.strokeStyle = '#e6ebf5';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(22 * Math.cos(-0.9) * f, 22 * Math.sin(-0.9));
+      ctx.lineTo(22 * Math.cos(0.9) * f, 22 * Math.sin(0.9));
+      ctx.stroke();
+      // nocked arrow
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-4 * f, 0);
+      ctx.lineTo(28 * f, 0);
+      ctx.stroke();
+      ctx.fillStyle = '#e6ebf5';
+      ctx.beginPath();
+      ctx.moveTo(28 * f, -3);
+      ctx.lineTo(36 * f, 0);
+      ctx.lineTo(28 * f, 3);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    }
+    case 'flame': {
+      // flame wand
+      ctx.strokeStyle = '#7c2d12';
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      ctx.moveTo(-10 * f, 4);
+      ctx.lineTo(32 * f, -20);
+      ctx.stroke();
+      // flame tip
+      const fx = 32 * f, fy = -20;
+      const flameGrad = ctx.createRadialGradient(fx, fy, 1, fx, fy, 16);
+      flameGrad.addColorStop(0, '#fff');
+      flameGrad.addColorStop(0.3, '#fbbf24');
+      flameGrad.addColorStop(0.7, '#fb923c');
+      flameGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = flameGrad;
+      ctx.beginPath();
+      ctx.arc(fx, fy, 16, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case 'tome': {
+      // spell tome
+      ctx.fillStyle = '#065f46';
+      ctx.fillRect(-10 * f, -16, 20 * f, 28);
+      ctx.fillStyle = '#34d399';
+      ctx.fillRect(-8 * f, -14, 16 * f, 4);
+      ctx.fillRect(-8 * f, -8, 16 * f, 4);
+      ctx.fillRect(-8 * f, -2, 10 * f, 4);
+      // glowing rune
+      const tomeGrad = ctx.createRadialGradient(0, -4, 1, 0, -4, 10);
+      tomeGrad.addColorStop(0, 'rgba(52,211,153,0.8)');
+      tomeGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = tomeGrad;
+      ctx.beginPath();
+      ctx.arc(0, -4, 10, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
   }
   ctx.restore();
 }
@@ -372,7 +571,7 @@ export function drawStickmanPortrait(ctx, ch, x, y, t) {
     pos: { x, y }, vel: { vx: 0, vy: 0 }, facing: 1,
     animTime: t, state: 'idle', character: ch,
     flashTime: 0, dead: false, action: null,
-    parryActive: 0, frozen: 0, buff: null
+    parryActive: 0, frozen: 0, stealth: 0, shield: null, buff: null
   };
   drawStickman(ctx, fakeEnt);
 }
@@ -407,11 +606,113 @@ export function drawProjectile(ctx, p) {
     ctx.lineTo(14, 5);
     ctx.closePath();
     ctx.fill();
+  } else if (p.kind === 'arrow' || p.kind === 'arrow-pierce') {
+    ctx.rotate(Math.atan2(p.vy, p.vx));
+    ctx.strokeStyle = '#92400e';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-18, 0); ctx.lineTo(10, 0);
+    ctx.stroke();
+    ctx.fillStyle = p.kind === 'arrow-pierce' ? '#ffffff' : p.color;
+    ctx.beginPath();
+    ctx.moveTo(10, -4);
+    ctx.lineTo(20, 0);
+    ctx.lineTo(10, 4);
+    ctx.closePath();
+    ctx.fill();
+    if (p.kind === 'arrow-pierce') {
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(-18, 0); ctx.lineTo(20, 0);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawMinion(ctx, m, tick) {
+  ctx.save();
+  ctx.translate(m.x, m.y);
+  const bob = Math.abs(Math.sin(m.animTime * 0.25)) * 2;
+  ctx.translate(0, -bob);
+
+  const color = m.owner.character.color;
+  const alpha = Math.min(1, m.life / 60);
+  ctx.globalAlpha = alpha;
+
+  if (m.isTitan) {
+    // large bone titan
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 7;
+    ctx.lineCap = 'round';
+    // body
+    ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(0, -60); ctx.stroke();
+    // head
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(0, -72, 14, 0, Math.PI * 2); ctx.fill();
+    // arms
+    const armSwing = Math.sin(m.animTime * 0.2) * 0.4;
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(0, -52); ctx.lineTo(-28 + armSwing * 10, -36); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -52); ctx.lineTo(28 - armSwing * 10, -36); ctx.stroke();
+    // legs
+    const legSwing = Math.sin(m.animTime * 0.25) * 0.5;
+    ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(-16 + legSwing * 8, 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(16 - legSwing * 8, 4); ctx.stroke();
+    // glow
+    const grd = ctx.createRadialGradient(0, -46, 8, 0, -46, 40);
+    grd.addColorStop(0, color + '44');
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(0, -46, 40, 0, Math.PI * 2); ctx.fill();
+    // hp bar
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(-22, -92, 44, 6);
+    ctx.fillStyle = color;
+    ctx.fillRect(-22, -92, 44 * (m.hp / m.maxHp), 6);
+  } else {
+    // small bone minion
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(0, -38); ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(0, -46, 9, 0, Math.PI * 2); ctx.fill();
+    const aSwing = Math.sin(m.animTime * 0.25) * 0.4;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0, -34); ctx.lineTo(-18 + aSwing * 6, -22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -34); ctx.lineTo(18 - aSwing * 6, -22); ctx.stroke();
+    const lSwing = Math.sin(m.animTime * 0.3) * 0.4;
+    ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(-10 + lSwing * 5, 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(10 - lSwing * 5, 4); ctx.stroke();
+    // hp bar
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(-16, -60, 32, 4);
+    ctx.fillStyle = color;
+    ctx.fillRect(-16, -60, 32 * (m.hp / m.maxHp), 4);
   }
   ctx.restore();
 }
 
 export function drawEffects(ctx, world) {
+  // lava pools
+  if (world.lavaPools) {
+    for (const pool of world.lavaPools) {
+      ctx.save();
+      const pulseFactor = 0.85 + Math.sin(world.tick * 0.12) * 0.15;
+      const lavaGrad = ctx.createRadialGradient(pool.x, pool.y, 4, pool.x, pool.y, pool.radius * pulseFactor);
+      lavaGrad.addColorStop(0, 'rgba(251, 191, 36, 0.7)');
+      lavaGrad.addColorStop(0.5, 'rgba(251, 146, 60, 0.45)');
+      lavaGrad.addColorStop(1, 'rgba(251, 146, 60, 0)');
+      ctx.fillStyle = lavaGrad;
+      ctx.beginPath();
+      ctx.ellipse(pool.x, pool.y - 4, pool.radius * pulseFactor, 14, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
   for (const s of world.shockwaves) {
     ctx.save();
     ctx.translate(s.x, s.y);
@@ -451,6 +752,20 @@ export function drawEffects(ctx, world) {
       ctx.fillStyle = '#7c2d12';
       ctx.beginPath();
       ctx.arc(0, 0, 12, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (f.kind === 'eruption') {
+      const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, 30);
+      grad.addColorStop(0, '#fff');
+      grad.addColorStop(0.3, '#fbbf24');
+      grad.addColorStop(0.6, '#fb923c');
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(0, 0, 30, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#c2410c';
+      ctx.beginPath();
+      ctx.arc(0, 0, 13, 0, Math.PI * 2);
       ctx.fill();
     } else {
       ctx.rotate(Math.PI / 2);
@@ -520,6 +835,14 @@ export function renderWorld(ctx, world) {
 
   const ents = [world.player, world.enemy].slice().sort((a, b) => a.pos.y - b.pos.y);
   for (const ent of ents) drawStickman(ctx, ent);
+
+  // draw minions
+  if (world.minions) {
+    for (const m of world.minions) {
+      if (m.dead) continue;
+      drawMinion(ctx, m, world.tick);
+    }
+  }
 
   for (const p of world.projectiles) drawProjectile(ctx, p);
 

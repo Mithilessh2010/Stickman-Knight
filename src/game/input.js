@@ -37,6 +37,9 @@ export function createInput() {
       if (pressed.has(action)) { pressed.delete(action); return true; }
       return false;
     },
+    addPressed(action) {
+      pressed.add(action);
+    },
     destroy() {
       window.removeEventListener('keydown', onDown);
       window.removeEventListener('keyup', onUp);
