@@ -575,6 +575,14 @@ function otherOf(world, ent) {
   return ent === world.player ? world.enemy : world.player;
 }
 
+function faceOpponent(world, ent) {
+  const other = otherOf(world, ent);
+  if (!other || other.dead || ent.dead) return;
+  const dx = other.pos.x - ent.pos.x;
+  if (Math.abs(dx) < 0.001) return;
+  ent.facing = dx > 0 ? 1 : -1;
+}
+
 function clampX(x) {
   return Math.max(40, Math.min(ARENA_W - 40, x));
 }
@@ -717,6 +725,8 @@ function updateEntity(world, ent) {
     ent.pos.x = clampX(ent.pos.x);
     return;
   }
+
+  faceOpponent(world, ent);
 
   const canAct = !ent.action && ent.hurtTime <= 0 && ent.frozen <= 0;
   const inp = ent.input;
