@@ -7,11 +7,16 @@ import { createInput } from '../game/input.js';
 import { audioManager } from '../game/audio.js';
 import HUD from './HUD.jsx';
 
-export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds, tournament, stage = 'rooftop' }) {
+export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds, tournament, stage = 'rooftop', paused = false }) {
   const canvasRef = useRef(null);
   const worldRef = useRef(null);
   const inputRef = useRef(null);
+  const pausedRef = useRef(paused);
   const [, force] = React.useReducer((x) => x + 1, 0);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
 
   useEffect(() => {
     const world = createWorld(playerChar, enemyChar);
@@ -38,17 +43,21 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds
     const loop = (now) => {
       const dt = Math.min(64, now - last);
       last = now;
-      acc += dt;
-      while (acc >= STEP) {
-        applyPlayerInput(world, input);
-        updateAI(world, world.enemy, world.player);
-        tick(world);
-        acc -= STEP;
-        hudTimer += 1;
-        if (world.winner && !ended) {
-          ended = true;
-          setTimeout(() => onGameOver(world.winner), 700);
+      if (!pausedRef.current) {
+        acc += dt;
+        while (acc >= STEP) {
+          applyPlayerInput(world, input);
+          updateAI(world, world.enemy, world.player);
+          tick(world);
+          acc -= STEP;
+          hudTimer += 1;
+          if (world.winner && !ended) {
+            ended = true;
+            setTimeout(() => onGameOver(world.winner), 700);
+          }
         }
+      } else {
+        acc = 0;
       }
       renderWorld(ctx, world, stage, now / 16);
       if (hudTimer > 3) { hudTimer = 0; force(); }

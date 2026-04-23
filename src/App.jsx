@@ -34,6 +34,7 @@ export default function App() {
   const [keybinds, setKeybinds] = useState(loadKeybinds());
   const [prevScreen, setPrevScreen] = useState(SCREENS.START);
   const [tournament, setTournament] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     // Load keybinds on mount
@@ -42,14 +43,20 @@ export default function App() {
 
     // Escape key for settings
     const handleEsc = (e) => {
-      if (e.code === 'Escape' && screen !== SCREENS.SETTINGS && screen !== SCREENS.START && screen !== SCREENS.END) {
-        setPrevScreen(screen);
-        setScreen(SCREENS.SETTINGS);
+      if (e.code !== 'Escape' || e.repeat || e.defaultPrevented) return;
+
+      if (settingsOpen) {
+        setSettingsOpen(false);
+        return;
+      }
+
+      if (screen !== SCREENS.START && screen !== SCREENS.END) {
+        setSettingsOpen(true);
       }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [screen]);
+  }, [screen, settingsOpen]);
 
   const handleStart = useCallback(() => setScreen(SCREENS.SELECT), []);
 
@@ -88,12 +95,12 @@ export default function App() {
 
   const handleOpenSettings = useCallback((fromScreen) => {
     setPrevScreen(fromScreen);
-    setScreen(SCREENS.SETTINGS);
+    setSettingsOpen(true);
   }, []);
 
   const handleCloseSettings = useCallback(() => {
-    setScreen(prevScreen);
-  }, [prevScreen]);
+    setSettingsOpen(false);
+  }, []);
 
   const handleOpenHelp = useCallback(() => {
     setPrevScreen(screen);
@@ -166,6 +173,7 @@ export default function App() {
             stage={selectedStage}
             onGameOver={handleGameOver}
             keybinds={keybinds}
+            paused={settingsOpen}
           />
         )}
         {screen === SCREENS.TOURNAMENT_GAME && (
@@ -176,6 +184,7 @@ export default function App() {
             onGameOver={handleTournamentGameOver}
             keybinds={keybinds}
             tournament={tournament}
+            paused={settingsOpen}
           />
         )}
         {screen === SCREENS.END && (
@@ -187,7 +196,7 @@ export default function App() {
             tournamentWinner={tournament?.winner}
           />
         )}
-        {screen === SCREENS.SETTINGS && (
+        {settingsOpen && (
           <SettingsScreen onClose={handleCloseSettings} />
         )}
         {screen === SCREENS.HELP && (
