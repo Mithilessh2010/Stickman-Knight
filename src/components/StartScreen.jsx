@@ -129,6 +129,7 @@ export default function StartScreen({ onStart, onSettings, onHelp, onCredits, on
           <div className="controls-hint" style={{ marginTop: 40 }}>
             <span>{getDisplayKey('left', keybinds)}</span><span>{getDisplayKey('right', keybinds)}</span> Move &nbsp;·&nbsp;
             <span>{getDisplayKey('jump', keybinds)}</span> Jump &nbsp;·&nbsp;
+            <span>{getDisplayKey('down', keybinds)}</span> + <span>{getDisplayKey('jump', keybinds)}</span> Drop &nbsp;·&nbsp;
             <span>{getDisplayKey('basic', keybinds)}</span> Attack &nbsp;·&nbsp;
             <span>{getDisplayKey('ultimate', keybinds)}</span> Ultimate
           </div>

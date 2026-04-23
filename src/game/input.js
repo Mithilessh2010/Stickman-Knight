@@ -5,7 +5,7 @@ export function createInput(keybinds = null) {
   const KEY_MAP = buildKeyMap(finalKeybinds);
 
   const state = {
-    left: false, right: false, jump: false,
+    left: false, right: false, down: false, jump: false,
     basic: false, ability1: false, ability2: false, ultimate: false
   };
   const pressed = new Set();
@@ -41,4 +41,3 @@ export function createInput(keybinds = null) {
     }
   };
 }
-

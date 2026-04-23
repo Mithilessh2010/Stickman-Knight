@@ -7,7 +7,9 @@ const SECTIONS = [
     color: '#00e5ff',
     items: [
       ['Move', '← → or A D'],
+      ['Down', '↓ or S'],
       ['Jump', 'Space / W / ↑'],
+      ['Drop Through', 'Hold Down + Jump'],
       ['Basic Attack', 'J'],
       ['Ability 1', 'K'],
       ['Ability 2', 'L'],

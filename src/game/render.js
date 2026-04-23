@@ -1,4 +1,116 @@
 import { ARENA_W, ARENA_H, GROUND_Y, ENTITY_HEIGHT } from './constants.js';
+import { STAGE_PLATFORMS } from './stage.js';
+
+function drawLowerAtmosphere(ctx, colors) {
+  const g = ctx.createLinearGradient(0, GROUND_Y - 60, 0, ARENA_H);
+  g.addColorStop(0, colors[0]);
+  g.addColorStop(0.55, colors[1]);
+  g.addColorStop(1, colors[2]);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, GROUND_Y - 60, ARENA_W, ARENA_H - (GROUND_Y - 60));
+
+  ctx.save();
+  ctx.globalAlpha = 0.28;
+  const glow = ctx.createRadialGradient(ARENA_W / 2, GROUND_Y + 30, 10, ARENA_W / 2, GROUND_Y + 30, 420);
+  glow.addColorStop(0, colors[3]);
+  glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, GROUND_Y - 80, ARENA_W, ARENA_H - (GROUND_Y - 80));
+  ctx.restore();
+}
+
+function roundedRectPath(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function drawArenaPlatform(ctx, platform, time, isMain) {
+  const topY = platform.y;
+  const halfW = platform.width / 2;
+  const left = platform.x - halfW;
+  const right = platform.x + halfW;
+  const depth = platform.depth;
+  const skirt = platform.skirt;
+  const lip = platform.lip;
+
+  ctx.save();
+
+  ctx.globalAlpha = isMain ? 0.32 : 0.22;
+  const shadow = ctx.createRadialGradient(platform.x, topY + 38, 20, platform.x, topY + 38, platform.width * 0.55);
+  shadow.addColorStop(0, 'rgba(15, 23, 42, 0.65)');
+  shadow.addColorStop(1, 'transparent');
+  ctx.fillStyle = shadow;
+  ctx.beginPath();
+  ctx.ellipse(platform.x, topY + 34, platform.width * 0.52, isMain ? 42 : 24, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  const islandBottom = topY + skirt;
+  const underside = ctx.createLinearGradient(0, topY + 6, 0, islandBottom);
+  underside.addColorStop(0, isMain ? '#26364f' : '#24344b');
+  underside.addColorStop(1, isMain ? '#0f1728' : '#121b2c');
+  ctx.fillStyle = underside;
+  ctx.beginPath();
+  ctx.moveTo(left + lip, topY + 6);
+  ctx.quadraticCurveTo(platform.x, topY + 18, right - lip, topY + 6);
+  ctx.lineTo(right - lip * 0.8, islandBottom - 8);
+  ctx.quadraticCurveTo(platform.x + halfW * 0.25, islandBottom + 12, platform.x, islandBottom);
+  ctx.quadraticCurveTo(platform.x - halfW * 0.25, islandBottom + 12, left + lip * 0.8, islandBottom - 8);
+  ctx.closePath();
+  ctx.fill();
+
+  const top = ctx.createLinearGradient(0, topY - 10, 0, topY + depth);
+  top.addColorStop(0, '#f8fafc');
+  top.addColorStop(0.22, isMain ? '#d7ecff' : '#dbeafe');
+  top.addColorStop(0.9, isMain ? '#83a7c7' : '#8fb0cd');
+  ctx.fillStyle = top;
+  roundedRectPath(ctx, left, topY - 10, platform.width, depth, 16);
+  ctx.fill();
+
+  const moss = ctx.createLinearGradient(0, topY - 10, 0, topY + 8);
+  moss.addColorStop(0, 'rgba(255,255,255,0.7)');
+  moss.addColorStop(1, isMain ? 'rgba(148, 163, 184, 0.5)' : 'rgba(125, 211, 252, 0.35)');
+  ctx.fillStyle = moss;
+  ctx.fillRect(left + 12, topY - 8, platform.width - 24, 6);
+
+  ctx.save();
+  ctx.globalAlpha = 0.7 + Math.sin(time * 0.06 + platform.x * 0.01) * 0.08;
+  ctx.shadowColor = isMain ? 'rgba(125, 211, 252, 0.55)' : 'rgba(191, 219, 254, 0.45)';
+  ctx.shadowBlur = isMain ? 16 : 10;
+  ctx.strokeStyle = isMain ? 'rgba(186, 230, 253, 0.8)' : 'rgba(219, 234, 254, 0.72)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(left + 14, topY - 2);
+  ctx.lineTo(right - 14, topY - 2);
+  ctx.stroke();
+  ctx.restore();
+
+  if (isMain) {
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = '#e0f2fe';
+    ctx.beginPath();
+    ctx.ellipse(platform.x, topY + 12, platform.width * 0.32, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawStage(ctx, time) {
+  for (const platform of STAGE_PLATFORMS) {
+    drawArenaPlatform(ctx, platform, time, platform.id === 'main');
+  }
+}
 
 function drawDefaultBackground(ctx) {
   // Deep dark sky
@@ -31,35 +143,7 @@ function drawDefaultBackground(ctx) {
   }
   ctx.restore();
 
-  // Floor
-  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
-  gg.addColorStop(0, '#0e1520');
-  gg.addColorStop(1, '#03050a');
-  ctx.fillStyle = gg;
-  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
-
-  // Ground line with glow
-  ctx.save();
-  ctx.shadowColor = 'rgba(0, 229, 255, 0.5)';
-  ctx.shadowBlur = 8;
-  ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(0, GROUND_Y);
-  ctx.lineTo(ARENA_W, GROUND_Y);
-  ctx.stroke();
-  ctx.restore();
-
-  // Floor grid lines (perspective)
-  ctx.strokeStyle = 'rgba(0, 229, 255, 0.04)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 14; i++) {
-    const y = GROUND_Y + i * 10 + i * i * 0.5;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(ARENA_W, y);
-    ctx.stroke();
-  }
+  drawLowerAtmosphere(ctx, ['rgba(8, 15, 26, 0)', 'rgba(8, 15, 26, 0.55)', '#02050b', 'rgba(0, 229, 255, 0.14)']);
 }
 
 function drawRooftopBackground(ctx, time) {
@@ -81,19 +165,7 @@ function drawRooftopBackground(ctx, time) {
   }
   ctx.restore();
 
-  // Ground
-  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
-  gg.addColorStop(0, '#1a1f2e');
-  gg.addColorStop(1, '#0d0f15');
-  ctx.fillStyle = gg;
-  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
-
-  ctx.strokeStyle = 'rgba(125, 211, 252, 0.4)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, GROUND_Y);
-  ctx.lineTo(ARENA_W, GROUND_Y);
-  ctx.stroke();
+  drawLowerAtmosphere(ctx, ['rgba(15, 23, 42, 0)', 'rgba(15, 23, 42, 0.45)', '#070b13', 'rgba(0, 229, 255, 0.15)']);
 }
 
 function drawTempleBackground(ctx, time) {
@@ -116,19 +188,7 @@ function drawTempleBackground(ctx, time) {
   }
   ctx.restore();
 
-  // Ground
-  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
-  gg.addColorStop(0, '#3d342a');
-  gg.addColorStop(1, '#1a140a');
-  ctx.fillStyle = gg;
-  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
-
-  ctx.strokeStyle = 'rgba(253, 211, 77, 0.3)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, GROUND_Y);
-  ctx.lineTo(ARENA_W, GROUND_Y);
-  ctx.stroke();
+  drawLowerAtmosphere(ctx, ['rgba(61, 52, 42, 0)', 'rgba(61, 52, 42, 0.38)', '#130d06', 'rgba(253, 211, 77, 0.14)']);
 }
 
 function drawMountainBackground(ctx, time) {
@@ -151,19 +211,7 @@ function drawMountainBackground(ctx, time) {
   }
   ctx.restore();
 
-  // Ground
-  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
-  gg.addColorStop(0, '#f0f9ff');
-  gg.addColorStop(1, '#0c4a6e');
-  ctx.fillStyle = gg;
-  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
-
-  ctx.strokeStyle = 'rgba(165, 243, 252, 0.5)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, GROUND_Y);
-  ctx.lineTo(ARENA_W, GROUND_Y);
-  ctx.stroke();
+  drawLowerAtmosphere(ctx, ['rgba(12, 74, 110, 0)', 'rgba(12, 74, 110, 0.22)', '#07263b', 'rgba(255, 255, 255, 0.2)']);
 }
 
 function drawCyberlabBackground(ctx, time) {
@@ -187,19 +235,7 @@ function drawCyberlabBackground(ctx, time) {
   }
   ctx.restore();
 
-  // Ground
-  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
-  gg.addColorStop(0, '#3d2d5f');
-  gg.addColorStop(1, '#1a0a3d');
-  ctx.fillStyle = gg;
-  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
-
-  ctx.strokeStyle = 'rgba(192, 132, 252, 0.4)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, GROUND_Y);
-  ctx.lineTo(ARENA_W, GROUND_Y);
-  ctx.stroke();
+  drawLowerAtmosphere(ctx, ['rgba(45, 27, 105, 0)', 'rgba(45, 27, 105, 0.38)', '#11061f', 'rgba(192, 132, 252, 0.16)']);
 }
 
 function drawForestBackground(ctx, time) {
@@ -222,19 +258,7 @@ function drawForestBackground(ctx, time) {
   }
   ctx.restore();
 
-  // Ground
-  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
-  gg.addColorStop(0, '#4a6b5d');
-  gg.addColorStop(1, '#1a2d23');
-  ctx.fillStyle = gg;
-  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
-
-  ctx.strokeStyle = 'rgba(52, 211, 153, 0.3)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, GROUND_Y);
-  ctx.lineTo(ARENA_W, GROUND_Y);
-  ctx.stroke();
+  drawLowerAtmosphere(ctx, ['rgba(26, 45, 35, 0)', 'rgba(26, 45, 35, 0.42)', '#08110c', 'rgba(52, 211, 153, 0.12)']);
 }
 
 function drawScrapyardBackground(ctx, time) {
@@ -257,19 +281,7 @@ function drawScrapyardBackground(ctx, time) {
   }
   ctx.restore();
 
-  // Ground
-  const gg = ctx.createLinearGradient(0, GROUND_Y, 0, ARENA_H);
-  gg.addColorStop(0, '#6b4423');
-  gg.addColorStop(1, '#2a1505');
-  ctx.fillStyle = gg;
-  ctx.fillRect(0, GROUND_Y, ARENA_W, ARENA_H - GROUND_Y);
-
-  ctx.strokeStyle = 'rgba(251, 146, 60, 0.25)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, GROUND_Y);
-  ctx.lineTo(ARENA_W, GROUND_Y);
-  ctx.stroke();
+  drawLowerAtmosphere(ctx, ['rgba(42, 21, 5, 0)', 'rgba(42, 21, 5, 0.48)', '#090302', 'rgba(251, 146, 60, 0.14)']);
 }
 
 export function drawBackground(ctx, stage = 'rooftop', time = 0) {
@@ -298,122 +310,173 @@ export function drawBackground(ctx, stage = 'rooftop', time = 0) {
 }
 
 function lerp(a, b, t) { return a + (b - a) * Math.max(0, Math.min(1, t)); }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
 function bodyPose(ent) {
   const t = ent.animTime;
-  const f = ent.facing;
-  let legSwing = 0, armSwing = 0, bob = 0, tilt = 0, weaponAngle = 0;
-  const state = ent.state;
+  const moveRatio = clamp(Math.abs(ent.vel.vx) / Math.max(1.2, ent.character.speed || 1), 0, 1.35);
+  const stride = Math.sin(t * (0.14 + moveRatio * 0.22));
+  const landing = ent.landTime > 0 ? ent.landTime / 12 : 0;
+  const pose = {
+    frontLeg: 0.1,
+    backLeg: -0.1,
+    backArm: -0.12,
+    weaponAngle: 0.18,
+    bob: 0,
+    tilt: 0,
+    hipY: -36,
+    chestY: -ENTITY_HEIGHT + 24
+  };
 
-  if (state === 'run') {
-    legSwing = Math.sin(t * 0.35) * 0.9;
-    armSwing = Math.sin(t * 0.35 + Math.PI) * 0.6;
-    bob = Math.abs(Math.sin(t * 0.7)) * 3;
-  } else if (state === 'idle') {
-    bob = Math.sin(t * 0.06) * 1.5;
-    armSwing = Math.sin(t * 0.05) * 0.06;
-    weaponAngle = Math.sin(t * 0.05) * 0.05;
-  } else if (state === 'jump') {
-    legSwing = ent.vel.vy < 0 ? -0.6 : 0.4;
-    armSwing = -0.4;
-  } else if (state === 'hurt') {
-    tilt = -0.25 * f;
-    armSwing = 0.6;
-    legSwing = -0.4;
-  } else if (state === 'cast' && ent.action) {
-    const a = ent.action;
-    const def = a.def;
-    const total = def.windup + def.active + def.recovery;
-    let local = a.phaseTime;
-    if (a.phase === 'active') local += def.windup;
-    if (a.phase === 'recovery') local += def.windup + def.active;
-    const p = total > 0 ? local / total : 0;
-
-    if (def.type === 'melee') {
-      weaponAngle = lerp(-1.0, 1.4, p);
-      armSwing = lerp(-0.8, 0.8, p);
-      bob = Math.sin(p * Math.PI) * -2;
-    } else if (def.type === 'projectile' || def.type === 'rain') {
-      weaponAngle = lerp(-0.4, 0.8, Math.min(1, p * 1.3));
-      armSwing = -1.0;
-    } else if (def.type === 'dashStrike' || def.type === 'charge') {
-      weaponAngle = 1.0;
-      armSwing = 0.8;
-      legSwing = 0.6;
-    } else if (def.type === 'parry') {
-      weaponAngle = -0.5;
-      armSwing = -0.3;
-    } else if (def.type === 'shadowStep' || def.type === 'teleport') {
-      armSwing = -0.6;
-      weaponAngle = -0.8;
-    } else if (def.type === 'smokeBomb') {
-      armSwing = -1.0;
-      weaponAngle = -0.6;
-      bob = -2;
-    } else if (def.type === 'deathMark') {
-      armSwing = 1.2;
-      weaponAngle = 1.4;
-      bob = Math.sin(p * Math.PI) * -3;
-    } else if (def.type === 'flameDash') {
-      weaponAngle = 1.0;
-      armSwing = 0.8;
-      legSwing = 0.6;
-    } else if (def.type === 'lavaPool') {
-      armSwing = -0.8;
-      weaponAngle = -1.0;
-      bob = -2;
-    } else if (def.type === 'eruption') {
-      armSwing = -1.4;
-      weaponAngle = -1.6;
-      bob = -4;
-    } else if (def.type === 'piercingShot') {
-      weaponAngle = lerp(-0.6, 0.6, Math.min(1, p * 1.5));
-      armSwing = -1.2;
-      bob = Math.sin(p * Math.PI) * -2;
-    } else if (def.type === 'arrowStorm') {
-      weaponAngle = Math.sin(a.phaseTime * 0.15) * 0.4;
-      armSwing = -0.8;
-    } else if (def.type === 'backflip') {
-      weaponAngle = -0.5;
-      armSwing = -0.6;
-      legSwing = -0.4;
-    } else if (def.type === 'summon' || def.type === 'titan') {
-      armSwing = -1.2;
-      weaponAngle = -1.0;
-      bob = Math.sin(p * Math.PI) * -3;
-    } else if (def.type === 'boneShield') {
-      armSwing = -0.8;
-      weaponAngle = -0.5;
-    } else if (def.type === 'nova') {
-      armSwing = -1.2;
-      weaponAngle = -1.4;
-      bob = -3;
-    } else if (def.type === 'meteor') {
-      armSwing = -1.4;
-      weaponAngle = -1.6;
-      bob = -4;
-    } else if (def.type === 'slam') {
-      if (a.phase === 'windup') {
-        weaponAngle = lerp(0, -1.2, a.phaseTime / Math.max(1, def.windup));
-        armSwing = lerp(0, -1.2, a.phaseTime / Math.max(1, def.windup));
-        bob = -4;
+  switch (ent.state) {
+    case 'run':
+      pose.frontLeg = stride * 0.9;
+      pose.backLeg = -stride * 0.82;
+      pose.backArm = stride * 0.45 + 0.16;
+      pose.weaponAngle = -stride * 0.52 - 0.12;
+      pose.bob = Math.abs(Math.sin(t * (0.28 + moveRatio * 0.22))) * 2.8;
+      pose.tilt = clamp(ent.vel.vx / Math.max(8, ent.character.speed * 3.1), -0.18, 0.18);
+      break;
+    case 'jump':
+      pose.frontLeg = -0.78;
+      pose.backLeg = 0.24;
+      pose.backArm = -0.55;
+      pose.weaponAngle = 0.52;
+      pose.tilt = ent.facing * 0.1;
+      pose.bob = -1.5;
+      break;
+    case 'fall':
+      pose.frontLeg = 0.42;
+      pose.backLeg = 0.74;
+      pose.backArm = -0.5;
+      pose.weaponAngle = 0.18;
+      pose.tilt = -ent.facing * 0.08;
+      pose.bob = 1.2;
+      break;
+    case 'hurt':
+      pose.frontLeg = -0.5;
+      pose.backLeg = 0.18;
+      pose.backArm = 0.72;
+      pose.weaponAngle = 1.15;
+      pose.tilt = -0.32 * ent.facing;
+      pose.bob = 1.5;
+      break;
+    case 'dead':
+      if (ent.deathLanded) {
+        pose.frontLeg = 1.14;
+        pose.backLeg = 0.78;
+        pose.backArm = 0.84;
+        pose.weaponAngle = 1.5;
+        pose.tilt = 1.34 * ent.facing;
+        pose.hipY = -24;
+        pose.chestY = -48;
+        pose.bob = 3.5;
       } else {
-        weaponAngle = 1.4;
-        armSwing = 1.2;
+        pose.frontLeg = 0.88;
+        pose.backLeg = -0.18;
+        pose.backArm = -0.9;
+        pose.weaponAngle = 1.34;
+        pose.tilt = clamp(ent.vel.vx * 0.08, -0.95, 0.95) + ent.facing * 0.16;
+        pose.bob = 2;
       }
-    } else if (def.type === 'spin') {
-      weaponAngle = (a.phaseTime * 0.5) % (Math.PI * 2) - Math.PI;
-      armSwing = Math.sin(a.phaseTime * 0.5) * 1.0;
-    } else if (def.type === 'buff') {
-      weaponAngle = -0.6;
-      armSwing = -1.2;
-    } else if (def.type === 'vault') {
-      weaponAngle = -0.5;
-      armSwing = -0.6;
-      legSwing = -0.4;
+      break;
+    case 'victory': {
+      const cheer = Math.sin(t * 0.18);
+      pose.frontLeg = 0.14 + cheer * 0.05;
+      pose.backLeg = -0.16 - cheer * 0.04;
+      pose.backArm = -1.22 - cheer * 0.08;
+      pose.weaponAngle = -1.55 + cheer * 0.12;
+      pose.tilt = ent.facing * 0.08;
+      pose.bob = Math.abs(cheer) * 2.4;
+      break;
     }
+    case 'cast': {
+      const a = ent.action;
+      if (!a) break;
+      const def = a.def;
+      const wind = a.phase === 'windup' ? a.phaseTime / Math.max(1, def.windup || 1) : 1;
+      const active = a.phase === 'active' ? a.phaseTime / Math.max(1, def.active || 1) : (a.phase === 'recovery' ? 1 : 0);
+      const recovery = a.phase === 'recovery' ? a.phaseTime / Math.max(1, def.recovery || 1) : 0;
+      const isSwing = ['melee', 'dashStrike', 'charge', 'flameDash', 'cleave', 'scythe', 'carnage', 'spin'].includes(def.type);
+      const isShot = ['projectile', 'rain', 'piercingShot', 'rapidFire', 'execution'].includes(def.type);
+      const isChannel = ['nova', 'meteor', 'lavaPool', 'eruption', 'summon', 'titan', 'boneShield', 'shield', 'aura', 'judgment', 'curse', 'explosion', 'buff', 'buffStack'].includes(def.type);
+      const isEvade = ['parry', 'shadowStep', 'teleport', 'smokeBomb', 'backflip', 'vault', 'roll'].includes(def.type);
+
+      if (isSwing) {
+        pose.frontLeg = a.phase === 'windup' ? -0.55 : 0.34;
+        pose.backLeg = a.phase === 'windup' ? 0.2 : -0.2;
+        pose.backArm = -0.3;
+        pose.tilt = a.phase === 'windup' ? -0.22 * ent.facing : 0.18 * ent.facing;
+        pose.weaponAngle = a.phase === 'windup'
+          ? lerp(0.55, -1.2, wind)
+          : a.phase === 'active'
+            ? lerp(-1.2, 1.55, active)
+            : lerp(1.55, 0.2, recovery);
+        pose.bob = a.phase === 'windup' ? -2.5 : Math.sin(active * Math.PI) * -1.5;
+      } else if (isShot) {
+        pose.frontLeg = -0.16;
+        pose.backLeg = 0.08;
+        pose.backArm = -0.72;
+        pose.tilt = -0.08 * ent.facing;
+        pose.weaponAngle = a.phase === 'windup'
+          ? lerp(-0.2, -0.95, wind)
+          : a.phase === 'active'
+            ? lerp(-0.95, 0.28, active)
+            : lerp(0.28, 0.02, recovery);
+        pose.bob = -1.4;
+      } else if (isChannel) {
+        pose.frontLeg = -0.08;
+        pose.backLeg = 0.12;
+        pose.backArm = -1.05;
+        pose.weaponAngle = a.phase === 'windup' ? lerp(-0.2, -1.3, wind) : lerp(-1.3, -0.2, recovery);
+        pose.tilt = 0.05 * ent.facing;
+        pose.bob = -2.8 - Math.sin(active * Math.PI) * 1.4;
+      } else if (isEvade) {
+        pose.frontLeg = -0.6;
+        pose.backLeg = 0.46;
+        pose.backArm = -0.36;
+        pose.weaponAngle = def.type === 'roll' ? 1.0 : -0.65;
+        pose.tilt = def.type === 'roll' ? 0.35 * ent.facing : -0.16 * ent.facing;
+        pose.bob = def.type === 'roll' ? 2.2 : -1.2;
+      } else if (def.type === 'deathMark') {
+        pose.frontLeg = -0.34;
+        pose.backLeg = 0.2;
+        pose.backArm = -0.48;
+        pose.weaponAngle = a.phase === 'windup' ? lerp(-0.5, -1.2, wind) : lerp(-1.2, 1.42, active || recovery);
+        pose.tilt = -0.2 * ent.facing;
+        pose.bob = -2.2;
+      } else if (def.type === 'arrowStorm') {
+        pose.frontLeg = -0.05;
+        pose.backLeg = 0.12;
+        pose.backArm = -0.76;
+        pose.weaponAngle = -0.6 + Math.sin(a.phaseTime * 0.18) * 0.22;
+        pose.tilt = -0.04 * ent.facing;
+        pose.bob = -1.5;
+      } else if (def.type === 'slam') {
+        pose.frontLeg = a.phase === 'windup' ? -0.6 : 0.52;
+        pose.backLeg = a.phase === 'windup' ? 0.26 : -0.15;
+        pose.backArm = -0.22;
+        pose.weaponAngle = a.phase === 'windup' ? lerp(0.32, -1.45, wind) : lerp(-1.45, 1.5, active || recovery);
+        pose.tilt = a.phase === 'windup' ? -0.18 * ent.facing : 0.14 * ent.facing;
+        pose.bob = -3.2;
+      }
+      break;
+    }
+    default:
+      pose.frontLeg = 0.08 + Math.sin(t * 0.05) * 0.03;
+      pose.backLeg = -0.1 - Math.sin(t * 0.05) * 0.03;
+      pose.backArm = -0.1 + Math.sin(t * 0.04) * 0.04;
+      pose.weaponAngle = 0.14 + Math.sin(t * 0.05) * 0.04;
+      pose.bob = Math.sin(t * 0.06) * 1.5;
+      pose.tilt = Math.sin(t * 0.04) * 0.015;
+      break;
   }
-  return { legSwing, armSwing, bob, tilt, weaponAngle };
+
+  pose.hipY += landing * 4;
+  pose.chestY += landing * 2;
+  pose.bob += landing * 1.2;
+
+  return pose;
 }
 
 export function drawStickman(ctx, ent) {
@@ -457,6 +520,8 @@ export function drawStickman(ctx, ent) {
     ctx.restore();
   }
 
+  const baseAlpha = ctx.globalAlpha;
+
   const flash = ent.flashTime > 0;
   const lineColor = flash ? '#ffffff' : (ent.dead ? '#5b6477' : ch.color);
   const accent = flash ? '#ffffff' : ch.accent;
@@ -464,22 +529,31 @@ export function drawStickman(ctx, ent) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  const hipY = -36;
+  const hipY = pose.hipY;
   const legLen = 32;
-  const lA = pose.legSwing;
-  const rA = -pose.legSwing;
-  const lFootX = Math.sin(lA) * legLen;
-  const lFootY = Math.cos(lA) * legLen + hipY;
-  const rFootX = Math.sin(rA) * legLen;
-  const rFootY = Math.cos(rA) * legLen + hipY;
+  const backFootX = Math.sin(pose.backLeg) * legLen;
+  const backFootY = Math.cos(pose.backLeg) * legLen + hipY;
+  const frontFootX = Math.sin(pose.frontLeg) * legLen;
+  const frontFootY = Math.cos(pose.frontLeg) * legLen + hipY;
+
+  ctx.save();
+  ctx.globalAlpha *= ent.onGround ? 0.26 : 0.16;
+  ctx.fillStyle = '#020617';
+  ctx.beginPath();
+  ctx.ellipse(0, 2, ent.dead && ent.deathLanded ? 26 : 20, ent.dead && ent.deathLanded ? 8 : 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = 4.5;
+  ctx.globalAlpha = baseAlpha * 0.68;
   ctx.beginPath();
-  ctx.moveTo(0, hipY); ctx.lineTo(lFootX, lFootY);
-  ctx.moveTo(0, hipY); ctx.lineTo(rFootX, rFootY);
+  ctx.moveTo(0, hipY); ctx.lineTo(backFootX, backFootY);
+  ctx.moveTo(0, hipY); ctx.lineTo(frontFootX, frontFootY);
   ctx.stroke();
+  ctx.globalAlpha = baseAlpha;
 
-  const chestY = -ENTITY_HEIGHT + 24;
+  const chestY = pose.chestY;
   ctx.lineWidth = 6;
   ctx.beginPath();
   ctx.moveTo(0, hipY);
@@ -497,19 +571,22 @@ export function drawStickman(ctx, ent) {
 
   const shoulderY = chestY + 6;
   const armLen = 28;
-  const backArmA = -pose.armSwing * 0.5;
-  const backHandX = Math.sin(backArmA) * armLen * 0.8;
-  const backHandY = Math.cos(backArmA) * armLen * 0.8 + shoulderY;
+  const backArmA = pose.backArm;
+  const backHandX = Math.sin(backArmA) * armLen * 0.78;
+  const backHandY = Math.cos(backArmA) * armLen * 0.78 + shoulderY;
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = 4.2;
+  ctx.globalAlpha = baseAlpha * 0.72;
   ctx.beginPath();
   ctx.moveTo(0, shoulderY);
   ctx.lineTo(backHandX, backHandY);
   ctx.stroke();
+  ctx.globalAlpha = baseAlpha;
 
   const weaponBase = pose.weaponAngle;
   const armHandX = Math.sin(weaponBase) * armLen * f;
   const armHandY = Math.cos(weaponBase) * armLen + shoulderY;
+  ctx.lineWidth = 4.5;
   ctx.beginPath();
   ctx.moveTo(0, shoulderY);
   ctx.lineTo(armHandX, armHandY);
@@ -989,6 +1066,22 @@ export function drawProjectile(ctx, p) {
       ctx.moveTo(-18, 0); ctx.lineTo(20, 0);
       ctx.stroke();
     }
+  } else if (p.kind === 'bullet') {
+    ctx.rotate(Math.atan2(p.vy, p.vx));
+    const grad = ctx.createLinearGradient(-12, 0, 18, 0);
+    grad.addColorStop(0, 'rgba(255,255,255,0)');
+    grad.addColorStop(0.5, '#ffffff');
+    grad.addColorStop(1, p.color);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-14, 0);
+    ctx.lineTo(16, 0);
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(18, 0, 3.2, 0, Math.PI * 2);
+    ctx.fill();
   }
   ctx.restore();
 }
@@ -1168,16 +1261,25 @@ export function drawEffects(ctx, world) {
       ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
       ctx.stroke();
     } else if (e.kind === 'slash') {
-      ctx.globalAlpha = a * 0.85;
       ctx.translate(e.x, e.y);
       ctx.rotate(e.angle);
+      ctx.globalAlpha = a * 0.3;
       ctx.strokeStyle = e.color;
-      ctx.lineWidth = 4 * a + 2;
+      ctx.lineWidth = 14 * a + 6;
       ctx.beginPath();
       ctx.arc(0, 0, e.length * 0.5, -0.7, 0.7);
       ctx.stroke();
-      ctx.globalAlpha = a * 0.4;
-      ctx.lineWidth = 12 * a;
+      ctx.globalAlpha = a * 0.9;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3 * a + 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, e.length * 0.5, -0.62, 0.62);
+      ctx.stroke();
+      ctx.globalAlpha = a * 0.65;
+      ctx.strokeStyle = e.color;
+      ctx.lineWidth = 5 * a + 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, e.length * 0.5, -0.68, 0.68);
       ctx.stroke();
     } else if (e.kind === 'shockwave') {
       ctx.globalAlpha = a * 0.8;
@@ -1203,6 +1305,7 @@ export function renderWorld(ctx, world, stage = 'rooftop', time = 0) {
   ctx.save();
   ctx.translate(sx, sy);
   drawBackground(ctx, stage, time);
+  drawStage(ctx, time);
 
   const ents = [world.player, world.enemy].slice().sort((a, b) => a.pos.y - b.pos.y);
   for (const ent of ents) drawStickman(ctx, ent);

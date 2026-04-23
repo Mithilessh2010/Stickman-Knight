@@ -6,6 +6,7 @@ import { KeybindsContext } from '../contexts/KeybindsContext';
 const ACTION_LABELS = {
   left: 'Move Left',
   right: 'Move Right',
+  down: 'Move Down',
   jump: 'Jump',
   basic: 'Basic Attack',
   ability1: 'Ability 1',

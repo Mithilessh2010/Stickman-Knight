@@ -1,22 +1,30 @@
 import { ARENA_W, GROUND_Y, GRAVITY, FRICTION, AIR_FRICTION, MAX_FALL, ENTITY_HALF_W, ENTITY_HEIGHT } from './constants.js';
 import { CHARACTERS } from './characters.js';
 import {
-  spawnHitBurst, spawnRing, spawnSlash, spawnDust, spawnTrail, updateParticles
+  spawnHitBurst, spawnRing, spawnShockwave, spawnSlash, spawnSpark, spawnDust, spawnTrail, updateParticles
 } from './particles.js';
 import { audioManager } from './audio.js';
+import {
+  DROP_THROUGH_FRAMES,
+  findCurrentPlatform,
+  findLandingPlatform,
+  getSpawnPoints,
+  getStageBounds,
+  getStagePlatform
+} from './stage.js';
 
-export function createEntity(charId, x, facing, isPlayer) {
+export function createEntity(charId, spawn, facing, isPlayer) {
   const ch = CHARACTERS[charId];
   return {
     id: isPlayer ? 'player' : 'enemy',
     isPlayer,
     character: ch,
-    pos: { x, y: GROUND_Y },
+    pos: { x: spawn.x, y: spawn.y },
     vel: { vx: 0, vy: 0 },
     facing,
     hp: ch.maxHp,
-    onGround: true,
-    state: 'idle',
+    onGround: false,
+    state: 'fall',
     stateTime: 0,
     animTime: 0,
     action: null,
@@ -32,13 +40,18 @@ export function createEntity(charId, x, facing, isPlayer) {
     buff: null,
     dead: false,
     hitId: 0,
-    input: { left: false, right: false, jump: false }
+    platformId: null,
+    dropTimer: 0,
+    landTime: 0,
+    deathLanded: false,
+    input: { left: false, right: false, down: false, jump: false }
   };
 }
 
 export function createWorld(playerId, enemyId) {
-  const player = createEntity(playerId, ARENA_W * 0.3, 1, true);
-  const enemy = createEntity(enemyId, ARENA_W * 0.7, -1, false);
+  const spawn = getSpawnPoints();
+  const player = createEntity(playerId, spawn.player, 1, true);
+  const enemy = createEntity(enemyId, spawn.enemy, -1, false);
   return {
     player, enemy,
     entities: [player, enemy],
@@ -52,6 +65,7 @@ export function createWorld(playerId, enemyId) {
     shake: { mag: 0, time: 0 },
     overTime: 0,
     winner: null,
+    victoryPlayed: false,
     tick: 0
   };
 }
@@ -85,6 +99,7 @@ export function tryAction(world, ent, key) {
     ent.vel.vy = def.jumpVy;
     ent.vel.vx = def.jumpVx * ent.facing;
     ent.onGround = false;
+    ent.platformId = null;
   } else if (def.type === 'buff') {
     ent.buff = { duration: def.duration, dmgMul: def.dmgMul, speedMul: def.speedMul, dr: def.dr };
     spawnRing(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, ent.character.color, 80);
@@ -95,6 +110,7 @@ export function tryAction(world, ent, key) {
     ent.vel.vy = def.flipVy;
     ent.vel.vx = def.flipVx * ent.facing;
     ent.onGround = false;
+    ent.platformId = null;
     ent.iframes = 18;
   } else if (def.type === 'smokeBomb') {
     ent.stealth = def.stealthDuration;
@@ -584,7 +600,59 @@ function faceOpponent(world, ent) {
 }
 
 function clampX(x) {
-  return Math.max(40, Math.min(ARENA_W - 40, x));
+  const bounds = getStageBounds(ENTITY_HALF_W + 6);
+  return Math.max(bounds.left, Math.min(bounds.right, x));
+}
+
+function landOnPlatform(world, ent, platform) {
+  const wasGrounded = ent.onGround;
+  ent.pos.y = platform.y;
+  ent.vel.vy = 0;
+  ent.onGround = true;
+  ent.platformId = platform.id;
+  if (!wasGrounded) {
+    ent.landTime = 12;
+    spawnDust(world, ent.pos.x, platform.y);
+    if (Math.abs(ent.vel.vx) > ent.character.speed * 0.7 || ent.dead) {
+      spawnShockwave(world, ent.pos.x, platform.y - 2, ent.dead ? '#ffffff' : ent.character.color);
+    }
+  }
+}
+
+function dropThroughPlatform(ent) {
+  ent.onGround = false;
+  ent.platformId = null;
+  ent.dropTimer = DROP_THROUGH_FRAMES;
+  ent.pos.y += 4;
+  ent.vel.vy = Math.max(ent.vel.vy, 2.4);
+  ent.landTime = 0;
+}
+
+function updateEntityState(world, ent) {
+  if (ent.dead) {
+    ent.state = 'dead';
+    return;
+  }
+  if (world.winner && !ent.dead) {
+    const won = (world.winner === 'player' && ent === world.player) || (world.winner === 'enemy' && ent === world.enemy);
+    if (won && !ent.action && ent.hurtTime <= 0 && ent.frozen <= 0) {
+      ent.state = 'victory';
+      return;
+    }
+  }
+  if (ent.action) {
+    ent.state = 'cast';
+    return;
+  }
+  if (ent.hurtTime > 0) {
+    ent.state = 'hurt';
+    return;
+  }
+  if (!ent.onGround) {
+    ent.state = ent.vel.vy < 1.2 ? 'jump' : 'fall';
+    return;
+  }
+  ent.state = Math.abs(ent.vel.vx) > 0.6 ? 'run' : 'idle';
 }
 
 export function entityBox(ent) {
@@ -655,6 +723,8 @@ function applyHit(world, attacker, victim, damage, knockback) {
   victim.action = null;
   victim.state = 'hurt';
   victim.stateTime = 0;
+  victim.platformId = null;
+  victim.landTime = 0;
 
   const dir = Math.sign(victim.pos.x - attacker.pos.x) || attacker.facing;
   victim.vel.vx = dir * knockback;
@@ -667,6 +737,10 @@ function applyHit(world, attacker, victim, damage, knockback) {
   audioManager.playHit(intensity);
 
   spawnHitBurst(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, attacker.character.color, 14);
+  for (let i = 0; i < 3 + Math.floor(damage / 10); i++) {
+    spawnSpark(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, i % 2 === 0 ? '#ffffff' : attacker.character.color);
+  }
+  if (damage >= 20) spawnShockwave(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, attacker.character.color);
   addShake(world, Math.min(10, damage * 0.4), 10);
 
   if (victim.hp <= 0) {
@@ -674,10 +748,18 @@ function applyHit(world, attacker, victim, damage, knockback) {
     victim.dead = true;
     victim.state = 'dead';
     victim.stateTime = 0;
-    victim.vel.vx = dir * 4;
-    victim.vel.vy = -7;
+    victim.vel.vx = dir * Math.max(4.5, knockback * 0.9);
+    victim.vel.vy = -Math.max(7, knockback * 0.9);
+    victim.deathLanded = false;
+    victim.platformId = null;
     audioManager.playKo();
     spawnHitBurst(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, '#ffffff', 30);
+    spawnRing(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, attacker.character.color, 90);
+    spawnShockwave(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, '#ffffff');
+    for (let i = 0; i < 8; i++) {
+      spawnSpark(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, i % 2 === 0 ? '#ffffff' : attacker.character.color);
+    }
+    addShake(world, 14, 18);
   }
 }
 
@@ -708,21 +790,36 @@ function updateEntity(world, ent) {
     ent._auraActive.duration -= 1;
     if (ent._auraActive.duration <= 0) ent._auraActive = null;
   }
+  if (ent.dropTimer > 0) ent.dropTimer -= 1;
+  if (ent.landTime > 0) ent.landTime -= 1;
 
   ent.animTime += 1;
   ent.stateTime += 1;
+
+  const prevY = ent.pos.y;
 
   if (ent.dead) {
     ent.vel.vy += GRAVITY;
     if (ent.vel.vy > MAX_FALL) ent.vel.vy = MAX_FALL;
     ent.pos.x += ent.vel.vx;
     ent.pos.y += ent.vel.vy;
-    if (ent.pos.y >= GROUND_Y) {
-      ent.pos.y = GROUND_Y;
-      ent.vel.vy = 0;
-      ent.vel.vx *= 0.85;
-    }
     ent.pos.x = clampX(ent.pos.x);
+
+    const landingPlatform = findLandingPlatform(ent.pos.x, prevY, ent.pos.y, false);
+    if (landingPlatform) {
+      const firstDeathLanding = !ent.deathLanded;
+      landOnPlatform(world, ent, landingPlatform);
+      ent.deathLanded = true;
+      ent.vel.vx *= 0.85;
+      if (firstDeathLanding) {
+        spawnHitBurst(world, ent.pos.x, ent.pos.y - 10, ent.character.color, 12);
+        addShake(world, 10, 12);
+      }
+    } else {
+      ent.onGround = false;
+      ent.platformId = null;
+    }
+    updateEntityState(world, ent);
     return;
   }
 
@@ -730,6 +827,8 @@ function updateEntity(world, ent) {
 
   const canAct = !ent.action && ent.hurtTime <= 0 && ent.frozen <= 0;
   const inp = ent.input;
+  const currentPlatform = ent.onGround ? (getStagePlatform(ent.platformId) || findCurrentPlatform(ent.pos.x, ent.pos.y)) : null;
+  const inVictory = world.winner && ((world.winner === 'player' && ent === world.player) || (world.winner === 'enemy' && ent === world.enemy));
 
   if (canAct && ent.queuedAction) {
     tryAction(world, ent, ent.queuedAction);
@@ -741,14 +840,20 @@ function updateEntity(world, ent) {
   // Apply curse debuff
   if (ent._cursed && ent._cursed.duration > 0) speedMul *= ent._cursed.speedReduction;
   const baseSpeed = ent.character.speed * speedMul;
-  if (canAct && ent.knockTime <= 0) {
+  if (inVictory) {
+    ent.vel.vx *= FRICTION;
+  } else if (canAct && ent.knockTime <= 0) {
     if (inp.left) ent.vel.vx = -baseSpeed;
     else if (inp.right) ent.vel.vx = baseSpeed;
     else ent.vel.vx *= ent.onGround ? FRICTION : AIR_FRICTION;
-    if (inp.jump && ent.onGround) {
+
+    if (inp.down && inp.jump && currentPlatform?.kind === 'soft') {
+      dropThroughPlatform(ent);
+    } else if (inp.jump && ent.onGround) {
       ent.vel.vy = -ent.character.jumpPower;
       ent.onGround = false;
-      spawnDust(world, ent.pos.x, GROUND_Y);
+      ent.platformId = null;
+      spawnDust(world, ent.pos.x, prevY);
     }
   } else {
     ent.vel.vx *= ent.onGround ? FRICTION : AIR_FRICTION;
@@ -761,26 +866,17 @@ function updateEntity(world, ent) {
 
   ent.pos.x += ent.vel.vx;
   ent.pos.y += ent.vel.vy;
-
-  if (ent.pos.y >= GROUND_Y) {
-    if (!ent.onGround) spawnDust(world, ent.pos.x, GROUND_Y);
-    ent.pos.y = GROUND_Y;
-    ent.vel.vy = 0;
-    ent.onGround = true;
-  } else {
-    ent.onGround = false;
-  }
   ent.pos.x = clampX(ent.pos.x);
 
-  if (!ent.action && ent.hurtTime <= 0 && ent.frozen <= 0) {
-    if (!ent.onGround) ent.state = 'jump';
-    else if (Math.abs(ent.vel.vx) > 0.6) ent.state = 'run';
-    else ent.state = 'idle';
-  } else if (ent.action) {
-    ent.state = 'cast';
-  } else if (ent.hurtTime > 0) {
-    ent.state = 'hurt';
+  const landingPlatform = ent.vel.vy >= 0 ? findLandingPlatform(ent.pos.x, prevY, ent.pos.y, ent.dropTimer > 0) : null;
+  if (landingPlatform) {
+    landOnPlatform(world, ent, landingPlatform);
+  } else {
+    ent.onGround = false;
+    ent.platformId = null;
   }
+
+  updateEntityState(world, ent);
 }
 
 function updateProjectiles(world) {
@@ -907,6 +1003,10 @@ export function tick(world) {
       else if (world.player.dead && world.enemy.dead) world.winner = 'enemy';
     }
   }
+  if (world.winner && !world.victoryPlayed) {
+    world.victoryPlayed = true;
+    audioManager.playVictory();
+  }
 }
 
 function updateShockwaves(world) {
@@ -957,6 +1057,7 @@ export function applyPlayerInput(world, input) {
   const p = world.player;
   p.input.left = input.state.left;
   p.input.right = input.state.right;
+  p.input.down = input.state.down;
   p.input.jump = input.state.jump;
   if (input.consumePressed('basic')) p.queuedAction = 'basic';
   else if (input.consumePressed('ability1')) p.queuedAction = 'ability1';

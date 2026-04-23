@@ -1,6 +1,7 @@
 export const DEFAULT_KEYBINDS = {
   left: ['KeyA', 'ArrowLeft'],
   right: ['KeyD', 'ArrowRight'],
+  down: ['KeyS', 'ArrowDown'],
   jump: ['KeyW', 'ArrowUp', 'Space'],
   basic: ['KeyJ'],
   ability1: ['KeyK'],
@@ -20,7 +21,7 @@ export function getDisplayKey(action, keybinds) {
   const keys = keybinds[action];
   if (!keys?.length) return '?';
   // Prefer non-arrow, non-special keys for display
-  const displayOrder = ['KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyA', 'KeyD', 'KeyW'];
+  const displayOrder = ['KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyA', 'KeyD', 'KeyS', 'KeyW'];
   const displayKey = displayOrder.find(k => keys.includes(k));
   if (displayKey) return displayKey.replace('Key', '');
   if (keys[0] === 'Space') return 'Spc';
@@ -31,7 +32,14 @@ export function getDisplayKey(action, keybinds) {
 export function loadKeybinds() {
   try {
     const stored = localStorage.getItem('stickman-keybinds');
-    return stored ? JSON.parse(stored) : DEFAULT_KEYBINDS;
+    if (!stored) return DEFAULT_KEYBINDS;
+    const parsed = JSON.parse(stored);
+    return Object.fromEntries(
+      Object.entries(DEFAULT_KEYBINDS).map(([action, fallback]) => {
+        const keys = Array.isArray(parsed?.[action]) && parsed[action].length ? parsed[action] : fallback;
+        return [action, keys];
+      })
+    );
   } catch (e) {
     return DEFAULT_KEYBINDS;
   }

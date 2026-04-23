@@ -26,9 +26,18 @@ export function updateAI(world, self, target) {
     }
   }
 
-  self.input.left = false; self.input.right = false; self.input.jump = false;
+  self.input.left = false; self.input.right = false; self.input.down = false; self.input.jump = false;
   const tooClose = shouldBackOff(ch.id, dist, preferred);
   const inRange = dist <= preferred;
+  const onSoftPlatform = self.onGround && self.platformId && self.platformId !== 'main';
+  const targetAbove = target.pos.y < self.pos.y - 56;
+  const targetBelow = target.pos.y > self.pos.y + 68;
+
+  if (onSoftPlatform && targetBelow && Math.abs(dx) < 150) {
+    self.input.down = true;
+    self.input.jump = true;
+    return;
+  }
 
   if (tooClose) {
     if (dx > 0) self.input.left = true; else self.input.right = true;
@@ -36,7 +45,7 @@ export function updateAI(world, self, target) {
       self.input.jump = true;
   } else if (!inRange) {
     if (dx > 0) self.input.right = true; else self.input.left = true;
-    if (target.pos.y < self.pos.y - 60 && self.onGround) self.input.jump = true;
+    if (targetAbove && self.onGround) self.input.jump = true;
     if (ch.id === 'summoner' && world.minions && world.minions.filter(m => m.owner === self).length >= 2) {
       self.input.left = false; self.input.right = false;
     }
@@ -46,6 +55,13 @@ export function updateAI(world, self, target) {
     } else if (Math.random() < 0.02) {
       if (Math.random() < 0.5) self.input.left = true; else self.input.right = true;
     }
+  }
+
+  if (targetBelow && onSoftPlatform && dist < preferred * 1.1) {
+    self.input.left = false;
+    self.input.right = false;
+    self.input.down = true;
+    self.input.jump = true;
   }
 }
 
