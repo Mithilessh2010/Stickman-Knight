@@ -48,7 +48,7 @@ export function createEntity(charId, spawn, facing, isPlayer) {
     buff: null,
     dead: false,
     respawnTimer: 0,
-    respawnInvincible: RESPAWN_INVINCIBILITY,
+    respawnInvincible: 0,
     airJumps: 1,
     maxAirJumps: 1,
     hitId: 0,
@@ -156,21 +156,37 @@ function progressAction(world, ent) {
   const a = ent.action;
   if (!a) return;
   const def = a.def;
+  const windup = Math.max(0, Number.isFinite(def.windup) ? def.windup : 0);
+  const active = Math.max(1, Number.isFinite(def.active) ? def.active : 1);
+  const recovery = Math.max(0, Number.isFinite(def.recovery) ? def.recovery : 0);
+  const maxActionTime = windup + active + recovery + 30;
+  a.totalTime = (a.totalTime || 0) + 1;
+  if (a.totalTime > maxActionTime) {
+    if (!a.warnedTimeout) {
+      console.warn(`Recovered stuck action "${a.key}" for ${ent.character?.name || ent.id}.`);
+      a.warnedTimeout = true;
+    }
+    ent.action = null;
+    ent.state = 'idle';
+    ent.stateTime = 0;
+    ent.parryActive = 0;
+    return;
+  }
   a.phaseTime += 1;
 
-  if (a.phase === 'windup' && a.phaseTime >= def.windup) {
+  if (a.phase === 'windup' && a.phaseTime >= windup) {
     a.phase = 'active';
     a.phaseTime = 0;
     onActiveEnter(world, ent);
   }
   if (a.phase === 'active') {
     onActiveTick(world, ent);
-    if (a.phaseTime >= def.active) {
+    if (a.phaseTime >= active) {
       a.phase = 'recovery';
       a.phaseTime = 0;
     }
   }
-  if (a.phase === 'recovery' && a.phaseTime >= def.recovery) {
+  if (a.phase === 'recovery' && a.phaseTime >= recovery) {
     if (def.type === 'arrowStorm') {
       ent._stormTick = 0;
       ent._stormDef = null;

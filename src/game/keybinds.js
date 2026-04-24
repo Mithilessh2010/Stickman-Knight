@@ -14,6 +14,7 @@ export function buildKeyMap(keybinds) {
   for (const [action, keys] of Object.entries(keybinds)) {
     keys.forEach(code => { map[code] = action; });
   }
+  map.KeyJ = 'basic';
   return map;
 }
 
