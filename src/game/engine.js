@@ -94,6 +94,7 @@ const ACTION_KEYS = ['basic', 'ability1', 'ability2', 'ultimate'];
 
 export function tryAction(world, ent, key) {
   if (ent.dead || ent.action || ent.frozen > 0 || ent.hurtTime > 0) return false;
+  if (ent.respawnInvincible > 0) return false;
   if (ent.cooldowns[key] > 0) return false;
   const def = ent.character[key];
   if (!def) return false;
@@ -756,11 +757,17 @@ function koEntity(world, ent) {
   ent.state = 'dead';
   ent.stateTime = 0;
   ent.action = null;
+  ent.queuedAction = null;
   ent.hurtTime = 0;
   ent.knockTime = 0;
   ent.onGround = false;
   ent.platformId = null;
   ent.respawnTimer = (ent.stocks > 0 || world.training) ? RESPAWN_DELAY : 0;
+  ent.input.basic = false;
+  ent.input.ability1 = false;
+  ent.input.ability2 = false;
+  ent.input.ultimate = false;
+  ent.input.jumpPressed = false;
   spawnKoBurst(world, ent, dir);
   if (!world.training && ent.stocks <= 0) {
     world.winner = ent === world.player ? 'enemy' : 'player';
@@ -782,10 +789,16 @@ function respawnEntity(world, ent) {
   ent.respawnInvincible = RESPAWN_INVINCIBILITY;
   ent.airJumps = ent.maxAirJumps;
   ent.action = null;
+  ent.queuedAction = null;
   ent.hurtTime = 0;
   ent.knockTime = 0;
   ent.state = 'fall';
   ent.stateTime = 0;
+  ent.input.basic = false;
+  ent.input.ability1 = false;
+  ent.input.ability2 = false;
+  ent.input.ultimate = false;
+  ent.input.jumpPressed = false;
   spawnRing(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, ent.character.color, 90);
   spawnHitBurst(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, ent.character.color, 16);
 }
@@ -948,12 +961,14 @@ function updateEntity(world, ent) {
   if (ent._cursed && ent._cursed.duration > 0) speedMul *= ent._cursed.speedReduction;
   const baseSpeed = ent.character.speed * speedMul;
   const accel = ent.onGround ? Math.max(0.42, baseSpeed * 0.18) : Math.max(0.22, baseSpeed * 0.085);
+  const stage = getActiveStage();
+  const groundFriction = stage.slippery ? 0.94 : FRICTION;
   if (inVictory) {
-    ent.vel.vx *= FRICTION;
+    ent.vel.vx *= groundFriction;
   } else if (canAct && ent.knockTime <= 0) {
     if (inp.left) ent.vel.vx = approach(ent.vel.vx, -baseSpeed, accel);
     else if (inp.right) ent.vel.vx = approach(ent.vel.vx, baseSpeed, accel);
-    else ent.vel.vx *= ent.onGround ? FRICTION : AIR_FRICTION;
+    else ent.vel.vx *= ent.onGround ? groundFriction : AIR_FRICTION;
 
     if (inp.down && jumpNow && currentPlatform?.kind === 'soft') {
       dropThroughPlatform(ent);
@@ -968,13 +983,16 @@ function updateEntity(world, ent) {
       spawnDust(world, ent.pos.x, ent.pos.y);
     }
   } else {
-    ent.vel.vx *= ent.onGround ? FRICTION : AIR_FRICTION;
+    ent.vel.vx *= ent.onGround ? groundFriction : AIR_FRICTION;
   }
 
   progressAction(world, ent);
 
   ent.vel.vy += GRAVITY;
   if (ent.vel.vy > MAX_FALL) ent.vel.vy = MAX_FALL;
+  if (stage.windX && !ent.onGround) {
+    ent.vel.vx = Math.max(-12, Math.min(12, ent.vel.vx + stage.windX));
+  }
 
   ent.pos.x += ent.vel.vx;
   ent.pos.y += ent.vel.vy;
@@ -990,7 +1008,6 @@ function updateEntity(world, ent) {
 
   updateEntityState(world, ent);
   ent.input.jumpPressed = false;
-  const stage = getActiveStage();
   if (!world.winner && (hasLeftBlastZone(ent) || (stage.lavaBottom && ent.pos.y > GROUND_Y + 72))) koEntity(world, ent);
 }
 
@@ -1187,8 +1204,15 @@ export function applyPlayerInput(world, input) {
   p.input.down = input.state.down;
   p.input.jump = input.state.jump;
   p.input.jumpPressed = input.consumePressed('jump');
-  if (input.consumePressed('basic')) p.queuedAction = 'basic';
-  else if (input.consumePressed('ability1')) p.queuedAction = 'ability1';
-  else if (input.consumePressed('ability2')) p.queuedAction = 'ability2';
-  else if (input.consumePressed('ultimate')) p.queuedAction = 'ultimate';
+  const pressedAction =
+    input.consumePressed('basic') ? 'basic' :
+      input.consumePressed('ability1') ? 'ability1' :
+        input.consumePressed('ability2') ? 'ability2' :
+          input.consumePressed('ultimate') ? 'ultimate' : null;
+
+  if (p.dead || p.respawnTimer > 0 || p.respawnInvincible > 0) {
+    p.queuedAction = null;
+    return;
+  }
+  if (pressedAction) p.queuedAction = pressedAction;
 }

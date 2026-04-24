@@ -27,9 +27,10 @@ export default function StageSelect({ onSelect, onBack, previewOnly = false }) {
         </button>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, gap: 40 }}>
+      <div style={{ flex: 1, overflowY: 'auto', width: '100%', padding: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 32, flexWrap: 'wrap' }}>
         {/* Stage grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: 10, width: 'clamp(320px, 48vw, 620px)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(136px, 1fr))', gap: 10, width: 'clamp(320px, 58vw, 760px)' }}>
           {STAGES.map((s) => {
             const isSel = s.id === selected;
             return (
@@ -37,14 +38,15 @@ export default function StageSelect({ onSelect, onBack, previewOnly = false }) {
                 onClick={() => { setSelected(s.id); audioManager.playUIClick(); }}
                 onMouseEnter={() => audioManager.playUIHover()}
                 style={{
-                  padding: '18px 14px', cursor: 'pointer', borderRadius: 3,
+                  minHeight: 118,
+                  padding: '14px 10px', cursor: 'pointer', borderRadius: 3,
                   background: isSel ? `${s.color}10` : 'rgba(255,255,255,0.03)',
                   border: `1px solid ${isSel ? s.color : 'rgba(255,255,255,0.07)'}`,
                   transition: 'all 0.18s', textAlign: 'center',
                   transform: isSel ? 'scale(1.04)' : 'scale(1)',
                   boxShadow: isSel ? `0 0 20px ${s.color}30` : 'none',
                 }}>
-                <div style={{ fontSize: 28, marginBottom: 8, color: isSel ? s.color : 'var(--text-dim)', filter: isSel ? `drop-shadow(0 0 6px ${s.color})` : 'none', transition: 'all 0.2s' }}>{s.icon}</div>
+                <div style={{ fontSize: 24, marginBottom: 7, color: isSel ? s.color : 'var(--text-dim)', filter: isSel ? `drop-shadow(0 0 6px ${s.color})` : 'none', transition: 'all 0.2s' }}>{s.icon}</div>
                 <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: isSel ? s.color : 'var(--text)' }}>{s.name}</div>
                 <div style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: '0.2em', marginTop: 2 }}>{s.tag}</div>
               </div>
@@ -53,7 +55,7 @@ export default function StageSelect({ onSelect, onBack, previewOnly = false }) {
         </div>
 
         {/* Stage info panel */}
-        <div style={{ width: 220, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ width: 250, display: 'flex', flexDirection: 'column', gap: 20, position: 'sticky', top: 0 }}>
           <div>
             <div style={{ fontSize: 10, letterSpacing: '0.3em', color: stage.color, marginBottom: 8, fontWeight: 700, textTransform: 'uppercase', textShadow: `0 0 12px ${stage.color}88` }}>{stage.tag}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 34, letterSpacing: '0.04em', lineHeight: 1, color: '#fff' }}>{stage.name}</div>
@@ -81,6 +83,7 @@ export default function StageSelect({ onSelect, onBack, previewOnly = false }) {
               Fight Here
             </button>
           )}
+        </div>
         </div>
       </div>
     </div>

@@ -14,6 +14,7 @@ export function createInput(keybinds = null) {
     const a = KEY_MAP[e.code];
     if (!a) return;
     e.preventDefault();
+    if (e.repeat) return;
     state[a] = true;
     pressed.add(a);
   };
