@@ -150,7 +150,7 @@ export default function StartScreen({ onStory, onQuickSmash, onTraining, onChara
 
       {/* Bottom tag */}
       <div style={{ position: 'absolute', bottom: 20, left: 0, right: 0, fontSize: 10, color: 'rgba(255,255,255,0.12)', letterSpacing: '0.3em', textTransform: 'uppercase' }}>
-        Stickman Duel Arena
+        Stickman Platform Smash
       </div>
     </div>
   );

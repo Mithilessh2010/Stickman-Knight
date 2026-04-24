@@ -38,7 +38,7 @@ export default function PauseMenu({ onResume, onRestart, onHome }) {
             Restart Match
           </button>
           <button className="btn ghost" style={buttonStyle} onClick={() => { audioManager.playUIClick(); onHome(); }} onMouseEnter={() => audioManager.playUIHover()}>
-            Return to Main Menu
+            Return to Menu
           </button>
         </div>
       </div>

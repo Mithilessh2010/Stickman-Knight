@@ -15,11 +15,20 @@ function TournamentCharCard({ charId, selected, onSelect }) {
   useEffect(() => {
     const c = canvasRef.current; if (!c) return;
     const ctx = c.getContext('2d');
-    let raf, t = 0;
-    const loop = () => { t++; ctx.clearRect(0,0,c.width,c.height); drawStickmanPortrait(ctx, CHARACTERS[charId], c.width/2, c.height-12, t); raf = requestAnimationFrame(loop); };
+    let raf, t = charId.length * 13;
+    const draw = () => {
+      t++;
+      ctx.clearRect(0,0,c.width,c.height);
+      drawStickmanPortrait(ctx, CHARACTERS[charId], c.width/2, c.height-12, t);
+    };
+    if (!selected) {
+      draw();
+      return undefined;
+    }
+    const loop = () => { draw(); raf = requestAnimationFrame(loop); };
     loop();
     return () => cancelAnimationFrame(raf);
-  }, [charId]);
+  }, [charId, selected]);
 
   const ch = CHARACTERS[charId];
   return (

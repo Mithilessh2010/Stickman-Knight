@@ -34,7 +34,7 @@ function StatBar({ label, value, min, max, color }) {
   );
 }
 
-function FighterPortrait({ charId, width = 200, height = 240, baseline = 18 }) {
+function FighterPortrait({ charId, width = 200, height = 240, baseline = 18, animated = true }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -45,6 +45,12 @@ function FighterPortrait({ charId, width = 200, height = 240, baseline = 18 }) {
     let raf;
     let t = 0;
 
+    if (!animated) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawStickmanPortrait(ctx, CHARACTERS[charId], canvas.width / 2, canvas.height - baseline, charId.length * 17);
+      return undefined;
+    }
+
     const loop = () => {
       t += 1;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -54,7 +60,7 @@ function FighterPortrait({ charId, width = 200, height = 240, baseline = 18 }) {
 
     loop();
     return () => cancelAnimationFrame(raf);
-  }, [charId, baseline]);
+  }, [charId, baseline, animated]);
 
   const ch = CHARACTERS[charId];
 
@@ -81,7 +87,7 @@ function QuickPlayCharCard({ charId, selected, onSelect }) {
       onMouseEnter={() => audioManager.playUIHover()}
       style={{ '--char-color': ch.color, padding: '12px 8px', gap: 6, minHeight: 168 }}
     >
-      <FighterPortrait charId={charId} width={108} height={120} baseline={12} />
+      <FighterPortrait charId={charId} width={108} height={120} baseline={12} animated={selected} />
       <div style={{ fontSize: 8, letterSpacing: '0.18em', textTransform: 'uppercase', color: selected ? ch.color : 'var(--text-dim)', fontWeight: 700 }}>
         {ch.role}
       </div>

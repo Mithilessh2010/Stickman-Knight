@@ -1000,7 +1000,7 @@ function updateProjectiles(world) {
     p.x += p.vx; p.y += p.vy;
     p.life -= 1;
     p.rot = (p.rot || 0) + 0.2;
-    spawnTrail(world, p.x, p.y, p.color);
+    if ((world.tick + i) % 2 === 0) spawnTrail(world, p.x, p.y, p.color);
 
     if (p.piercing) {
       // piercing arrows hit both entities
@@ -1118,6 +1118,7 @@ export function tick(world) {
   updateFalling(world);
   updateLavaPools(world);
   updateMinions(world);
+  trimWorldLists(world);
   updateParticles(world);
   if (world.shake.time > 0) world.shake.time -= 1;
   else world.shake.mag = 0;
@@ -1132,7 +1133,7 @@ function updateShockwaves(world) {
     const s = world.shockwaves[i];
     s.x += s.speed * s.dir;
     s.traveled += s.speed;
-    if (s.traveled % 8 < s.speed) spawnDust(world, s.x, GROUND_Y);
+    if (world.tick % 3 === 0 && s.traveled % 12 < s.speed) spawnDust(world, s.x, GROUND_Y);
     const target = otherOf(world, s.owner);
     if (target && !target.dead) {
       const tb = entityBox(target);
@@ -1152,7 +1153,7 @@ function updateFalling(world) {
     if (f.delay && f.delay > 0) { f.delay -= 1; continue; }
     f.y += f.fall;
     f.fall = Math.min(f.fall + 0.3, 18);
-    spawnTrail(world, f.x, f.y, f.kind === 'meteor' ? '#fbbf24' : f.kind === 'eruption' ? '#fb923c' : '#fde68a');
+    if ((world.tick + i) % 2 === 0) spawnTrail(world, f.x, f.y, f.kind === 'meteor' ? '#fbbf24' : f.kind === 'eruption' ? '#fb923c' : '#fde68a');
     if (f.y >= f.target) {
       const target = otherOf(world, f.owner);
       if (target && !target.dead) {
@@ -1169,6 +1170,14 @@ function updateFalling(world) {
       world.fallingObjects.splice(i, 1);
     }
   }
+}
+
+function trimWorldLists(world) {
+  if (world.projectiles.length > 90) world.projectiles.splice(0, world.projectiles.length - 90);
+  if (world.fallingObjects.length > 48) world.fallingObjects.splice(0, world.fallingObjects.length - 48);
+  if (world.shockwaves.length > 28) world.shockwaves.splice(0, world.shockwaves.length - 28);
+  if (world.lavaPools && world.lavaPools.length > 10) world.lavaPools.splice(0, world.lavaPools.length - 10);
+  if (world.minions && world.minions.length > 10) world.minions.splice(0, world.minions.length - 10);
 }
 
 export function applyPlayerInput(world, input) {
