@@ -11,7 +11,7 @@ const BG_CHARS = [
   { id: 'assassin',x: 0.88, y: 0.72, scale: 2.0, facing: -1 },
 ];
 
-export default function StartScreen({ onStart, onSettings, onHelp, onCredits, onTournament }) {
+export default function StartScreen({ onArena, onSmash, onTraining, onCharacters, onMaps, onSettings, onHelp }) {
   const canvasRef = useRef(null);
   const { keybinds } = useContext(KeybindsContext) || { keybinds: null };
 
@@ -22,11 +22,11 @@ export default function StartScreen({ onStart, onSettings, onHelp, onCredits, on
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.code === 'Space' || e.code === 'Enter') { audioManager.playUIClick(); onStart(); }
+      if (e.code === 'Space' || e.code === 'Enter') { audioManager.playUIClick(); onSmash(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onStart]);
+  }, [onSmash]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -70,8 +70,8 @@ export default function StartScreen({ onStart, onSettings, onHelp, onCredits, on
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
 
         {/* Eyebrow */}
-        <div style={{ fontSize: 11, letterSpacing: '0.55em', textTransform: 'uppercase', color: 'rgba(0,229,255,0.6)', marginBottom: 16, fontWeight: 700 }}>
-          · 1 VS 1 ·
+        <div style={{ fontSize: 11, letterSpacing: '0.45em', textTransform: 'uppercase', color: 'rgba(0,229,255,0.6)', marginBottom: 16, fontWeight: 700 }}>
+          Platform Fighter
         </div>
 
         {/* Main title */}
@@ -96,27 +96,39 @@ export default function StartScreen({ onStart, onSettings, onHelp, onCredits, on
           color: '#00e5ff',
           textShadow: '0 0 40px rgba(0,229,255,0.4), 0 0 80px rgba(0,229,255,0.15)',
         }}>
-          ARENA
+          SMASH
         </h1>
 
         {/* Divider */}
         <div style={{ width: 60, height: 1, background: 'rgba(255,255,255,0.15)', margin: '28px auto' }} />
 
         {/* Press to play */}
-        <div className="start-prompt" onClick={() => { audioManager.playUIClick(); onStart(); }}
+        <div className="start-prompt" onClick={() => { audioManager.playUIClick(); onSmash(); }}
           style={{ cursor: 'pointer', marginBottom: 36 }}>
-          Press Space to Enter
+          Press Space for Smash Mode
         </div>
 
         {/* Nav buttons */}
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button className="btn primary" onClick={() => { audioManager.playUIClick(); onStart(); }}
-            style={{ padding: '12px 40px', fontSize: 15 }} onMouseEnter={() => audioManager.playUIHover()}>
-            Quick Play
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(180px, 1fr))', gap: 10, width: 'min(520px, 92vw)' }}>
+          <button className="btn primary" onClick={() => { audioManager.playUIClick(); onArena(); }}
+            style={{ padding: '13px 22px', fontSize: 14 }} onMouseEnter={() => audioManager.playUIHover()}>
+            Arena Mode
           </button>
-          <button className="btn" onClick={() => { audioManager.playUIClick(); onTournament(); }}
+          <button className="btn primary" onClick={() => { audioManager.playUIClick(); onSmash(); }}
+            style={{ padding: '13px 22px', fontSize: 14, background: '#fff', borderColor: '#fff' }} onMouseEnter={() => audioManager.playUIHover()}>
+            Smash Mode
+          </button>
+          <button className="btn" onClick={() => { audioManager.playUIClick(); onTraining(); }}
             style={{ fontSize: 13 }} onMouseEnter={() => audioManager.playUIHover()}>
-            Tournament
+            Training Mode
+          </button>
+          <button className="btn" onClick={() => { audioManager.playUIClick(); onCharacters(); }}
+            style={{ fontSize: 13 }} onMouseEnter={() => audioManager.playUIHover()}>
+            Characters
+          </button>
+          <button className="btn ghost" onClick={() => { audioManager.playUIClick(); onMaps(); }}
+            style={{ fontSize: 13 }} onMouseEnter={() => audioManager.playUIHover()}>
+            Maps
           </button>
           <button className="btn ghost" onClick={() => { audioManager.playUIClick(); onHelp(); }}
             style={{ fontSize: 13 }} onMouseEnter={() => audioManager.playUIHover()}>

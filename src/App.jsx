@@ -23,15 +23,21 @@ const SCREENS = {
   HELP: 'help',
   CREDITS: 'credits',
   TOURNAMENT: 'tournament',
-  TOURNAMENT_GAME: 'tournament_game'
+  TOURNAMENT_GAME: 'tournament_game',
+  OPPONENT_SELECT: 'opponent_select',
+  CHARACTERS: 'characters',
+  MAPS: 'maps'
 };
 
 export default function App() {
   const [screen, setScreen] = useState(SCREENS.START);
   const [playerChar, setPlayerChar] = useState(null);
   const [enemyChar, setEnemyChar] = useState(null);
-  const [selectedStage, setSelectedStage] = useState('rooftop');
+  const [selectedStage, setSelectedStage] = useState('battlefield');
   const [result, setResult] = useState(null);
+  const [mode, setMode] = useState('smash');
+  const [arenaQueue, setArenaQueue] = useState([]);
+  const [arenaIndex, setArenaIndex] = useState(0);
   const [keybinds, setKeybinds] = useState(loadKeybinds());
   const [prevScreen, setPrevScreen] = useState(SCREENS.START);
   const [tournament, setTournament] = useState(null);
@@ -59,13 +65,40 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [screen, settingsOpen]);
 
-  const handleStart = useCallback(() => setScreen(SCREENS.SELECT), []);
+  const startMode = useCallback((nextMode) => {
+    setMode(nextMode);
+    setResult(null);
+    setPlayerChar(null);
+    setEnemyChar(null);
+    setArenaQueue([]);
+    setArenaIndex(0);
+    setScreen(SCREENS.SELECT);
+  }, []);
 
   const handleSelect = useCallback((charId) => {
-    const pool = Object.keys(CHARACTERS).filter((c) => c !== charId);
-    const ai = pool[Math.floor(Math.random() * pool.length)];
     setPlayerChar(charId);
-    setEnemyChar(ai);
+    if (mode === 'arena') {
+      const queue = Object.keys(CHARACTERS).filter((c) => c !== charId);
+      setArenaQueue(queue);
+      setArenaIndex(0);
+      setEnemyChar(queue[0]);
+      setSelectedStage('battlefield');
+      setScreen(SCREENS.GAME);
+      return;
+    }
+    if (mode === 'smash') {
+      setScreen(SCREENS.OPPONENT_SELECT);
+      return;
+    }
+    if (mode === 'training') {
+      const pool = Object.keys(CHARACTERS).filter((c) => c !== charId);
+      setEnemyChar(pool[Math.floor(Math.random() * pool.length)]);
+      setScreen(SCREENS.STAGE_SELECT);
+    }
+  }, [mode]);
+
+  const handleOpponentSelect = useCallback((charId) => {
+    setEnemyChar(charId);
     setScreen(SCREENS.STAGE_SELECT);
   }, []);
 
@@ -80,11 +113,21 @@ export default function App() {
   }, []);
 
   const handleRestart = useCallback(() => {
+    if (mode === 'arena' && result === 'player') {
+      const nextIndex = arenaIndex + 1;
+      if (nextIndex < arenaQueue.length) {
+        setArenaIndex(nextIndex);
+        setEnemyChar(arenaQueue[nextIndex]);
+        setResult(null);
+        setScreen(SCREENS.GAME);
+        return;
+      }
+    }
     setResult(null);
     setPlayerChar(null);
     setEnemyChar(null);
     setScreen(SCREENS.SELECT);
-  }, []);
+  }, [arenaIndex, arenaQueue, mode, result]);
 
   const handleHome = useCallback(() => {
     setResult(null);
@@ -157,15 +200,47 @@ export default function App() {
   return (
     <KeybindsContext.Provider value={{ keybinds, setKeybinds }}>
       <div className="app-shell">
-        {screen === SCREENS.START && <StartScreen onStart={handleStart} onSettings={() => handleOpenSettings(SCREENS.START)} onHelp={handleOpenHelp} onCredits={handleOpenCredits} onTournament={() => setScreen(SCREENS.TOURNAMENT)} />}
+        {screen === SCREENS.START && (
+          <StartScreen
+            onArena={() => startMode('arena')}
+            onSmash={() => startMode('smash')}
+            onTraining={() => startMode('training')}
+            onCharacters={() => setScreen(SCREENS.CHARACTERS)}
+            onMaps={() => setScreen(SCREENS.MAPS)}
+            onSettings={() => handleOpenSettings(SCREENS.START)}
+            onHelp={handleOpenHelp}
+          />
+        )}
         {screen === SCREENS.SELECT && (
           <CharacterSelect
             onSelect={handleSelect}
             onSettings={() => handleOpenSettings(SCREENS.SELECT)}
             onBack={() => setScreen(SCREENS.START)}
+            title={mode === 'arena' ? 'ARENA MODE' : mode === 'training' ? 'TRAINING MODE' : 'SMASH MODE'}
+            subtitle={mode === 'arena' ? 'Fight through the entire roster one by one' : mode === 'training' ? 'Pick a fighter to practice abilities freely' : 'Pick your fighter'}
+            actionLabel={mode === 'arena' ? 'Start Arena Run' : mode === 'training' ? 'Choose Training Map' : 'Choose Opponent'}
+          />
+        )}
+        {screen === SCREENS.OPPONENT_SELECT && (
+          <CharacterSelect
+            onSelect={handleOpponentSelect}
+            onSettings={() => handleOpenSettings(SCREENS.OPPONENT_SELECT)}
+            onBack={() => setScreen(SCREENS.SELECT)}
+            title="CHOOSE OPPONENT"
+            subtitle="Smash Mode free battle opponent"
+            actionLabel="Choose Map"
           />
         )}
         {screen === SCREENS.STAGE_SELECT && <StageSelect onSelect={handleStageSelect} onBack={() => setScreen(SCREENS.SELECT)} />}
+        {screen === SCREENS.CHARACTERS && (
+          <CharacterSelect
+            onBack={() => setScreen(SCREENS.START)}
+            title="CHARACTERS"
+            subtitle="Full roster grouped by archetype"
+            readOnly
+          />
+        )}
+        {screen === SCREENS.MAPS && <StageSelect previewOnly onBack={() => setScreen(SCREENS.START)} />}
         {screen === SCREENS.TOURNAMENT && <TournamentScreen onStart={handleStartTournament} onBack={() => setScreen(SCREENS.START)} />}
         {screen === SCREENS.GAME && (
           <GameScreen
@@ -175,6 +250,8 @@ export default function App() {
             onGameOver={handleGameOver}
             keybinds={keybinds}
             paused={settingsOpen}
+            mode={mode}
+            aiDifficulty={mode === 'arena' ? 1 + arenaIndex * 0.035 : 1}
           />
         )}
         {screen === SCREENS.TOURNAMENT_GAME && (
@@ -195,6 +272,10 @@ export default function App() {
             onHome={handleHome}
             isTournament={!!tournament}
             tournamentWinner={tournament?.winner}
+            primaryLabelOverride={mode === 'arena' && result === 'player' && arenaIndex < arenaQueue.length - 1 ? 'Next Fighter →' : undefined}
+            subOverride={mode === 'arena' && result === 'player'
+              ? (arenaIndex < arenaQueue.length - 1 ? `Arena clear ${arenaIndex + 1}/${arenaQueue.length}` : 'Entire roster defeated')
+              : undefined}
           />
         )}
         {settingsOpen && (

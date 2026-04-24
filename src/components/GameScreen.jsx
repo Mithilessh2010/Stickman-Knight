@@ -7,7 +7,7 @@ import { createInput } from '../game/input.js';
 import { audioManager } from '../game/audio.js';
 import HUD from './HUD.jsx';
 
-export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds, tournament, stage = 'rooftop', paused = false }) {
+export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds, tournament, stage = 'battlefield', paused = false, mode = 'smash', aiDifficulty = 1 }) {
   const canvasRef = useRef(null);
   const worldRef = useRef(null);
   const inputRef = useRef(null);
@@ -19,7 +19,7 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds
   }, [paused]);
 
   useEffect(() => {
-    const world = createWorld(playerChar, enemyChar);
+    const world = createWorld(playerChar, enemyChar, { stage, mode, aiDifficulty });
     worldRef.current = world;
 
     const input = createInput(keybinds);
@@ -45,17 +45,20 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds
       last = now;
       if (!pausedRef.current) {
         acc += dt;
-        while (acc >= STEP) {
+        let steps = 0;
+        while (acc >= STEP && steps < 3) {
           applyPlayerInput(world, input);
           updateAI(world, world.enemy, world.player);
           tick(world);
           acc -= STEP;
+          steps += 1;
           hudTimer += 1;
           if (world.winner && !ended) {
             ended = true;
             setTimeout(() => onGameOver(world.winner), 700);
           }
         }
+        if (steps === 3 && acc >= STEP) acc = 0;
       } else {
         acc = 0;
       }
@@ -71,12 +74,12 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds
       inputRef.current = null;
       audioManager.stopMusic();
     };
-  }, [playerChar, enemyChar, onGameOver]);
+  }, [playerChar, enemyChar, onGameOver, stage, mode, aiDifficulty]);
 
   return (
     <div className="game-wrap">
       <canvas ref={canvasRef} className="game-canvas" style={canvasStyle} />
-      <HUD player={worldRef.current?.player} enemy={worldRef.current?.enemy} keybinds={keybinds} />
+      <HUD player={worldRef.current?.player} enemy={worldRef.current?.enemy} keybinds={keybinds} mode={mode} />
     </div>
   );
 }

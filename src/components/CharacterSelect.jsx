@@ -120,7 +120,15 @@ function AbilityRow({ label, ability, color, isUlt }) {
   );
 }
 
-export default function CharacterSelect({ onSelect, onSettings, onBack }) {
+export default function CharacterSelect({
+  onSelect,
+  onSettings,
+  onBack,
+  title = 'QUICK PLAY',
+  subtitle = 'Pick a fighter, then choose a stage',
+  actionLabel = 'Continue to Stage Select',
+  readOnly = false
+}) {
   const ids = Object.keys(CHARACTERS);
   const [selected, setSelected] = useState(ids[0]);
   const ch = CHARACTERS[selected];
@@ -152,9 +160,9 @@ export default function CharacterSelect({ onSelect, onSettings, onBack }) {
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 32, letterSpacing: '0.04em' }}>QUICK PLAY</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: 32, letterSpacing: '0.04em' }}>{title}</span>
           <span style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-            Pick a fighter, then choose a stage
+            {subtitle}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -178,7 +186,8 @@ export default function CharacterSelect({ onSelect, onSettings, onBack }) {
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', width: '100%' }}>
-        <div style={{
+        {!readOnly && (
+          <div style={{
           display: 'flex',
           gap: 16,
           flexWrap: 'wrap',
@@ -188,7 +197,7 @@ export default function CharacterSelect({ onSelect, onSettings, onBack }) {
           border: '1px solid rgba(0,229,255,0.15)',
           borderLeft: '3px solid var(--accent)',
           borderRadius: 2,
-        }}>
+          }}>
           {[
             ['Single Match', 'Jump straight into a one-off fight'],
             ['Random Rival', 'A new opponent is chosen each run'],
@@ -203,7 +212,8 @@ export default function CharacterSelect({ onSelect, onSettings, onBack }) {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         <div style={{ fontSize: 9, letterSpacing: '0.25em', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 14, fontWeight: 700 }}>
           Choose Your Fighter
@@ -289,14 +299,16 @@ export default function CharacterSelect({ onSelect, onSettings, onBack }) {
                 ))}
               </div>
 
-              <button
-                className="btn primary"
-                onClick={() => { audioManager.playUIClick(); onSelect(selected); }}
-                onMouseEnter={() => audioManager.playUIHover()}
-                style={{ width: '100%', marginTop: 22, padding: '15px 18px', fontSize: 15 }}
-              >
-                Continue to Stage Select
-              </button>
+              {!readOnly && (
+                <button
+                  className="btn primary"
+                  onClick={() => { audioManager.playUIClick(); onSelect(selected); }}
+                  onMouseEnter={() => audioManager.playUIHover()}
+                  style={{ width: '100%', marginTop: 22, padding: '15px 18px', fontSize: 15 }}
+                >
+                  {actionLabel}
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { audioManager } from '../game/audio.js';
 
-export default function EndScreen({ result, onRestart, onHome, isTournament, tournamentWinner }) {
+export default function EndScreen({ result, onRestart, onHome, isTournament, tournamentWinner, primaryLabelOverride, subOverride }) {
   const [show, setShow] = useState(false);
   const win = result === 'player';
   const isChampion = isTournament && tournamentWinner === 'player' && win;
   const primaryGoesHome = isChampion || (isTournament && !win);
   const primaryAction = primaryGoesHome ? onHome : onRestart;
-  const primaryLabel = isChampion ? 'Main Menu' : isTournament ? (win ? 'Next Match →' : 'Main Menu') : 'Rematch';
+  const primaryLabel = primaryLabelOverride || (isChampion ? 'Main Menu' : isTournament ? (win ? 'Next Match →' : 'Main Menu') : 'Rematch');
   const showSecondaryAction = !primaryGoesHome;
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function EndScreen({ result, onRestart, onHome, isTournament, tou
 
   const accentColor = isChampion ? '#ff9500' : win ? '#00ff9d' : '#ff3355';
   const label = isChampion ? 'CHAMPION' : win ? 'VICTORY' : 'DEFEAT';
-  const sub = isChampion ? 'Tournament Conquered' : isTournament ? (win ? 'Advancing to next round' : 'Eliminated from tournament') : (win ? 'Opponent out of stocks' : 'You ran out of stocks');
+  const sub = subOverride || (isChampion ? 'Tournament Conquered' : isTournament ? (win ? 'Advancing to next round' : 'Eliminated from tournament') : (win ? 'Opponent out of stocks' : 'You ran out of stocks'));
   const keyHint = primaryGoesHome ? '[Enter / Space] Main Menu' : '[Enter / Space] Continue · [Esc] Main Menu';
 
   return (

@@ -1,16 +1,10 @@
 import React, { useState } from 'react';
 import { audioManager } from '../game/audio.js';
+import { STAGE_LIST } from '../game/stage.js';
 
-const STAGES = [
-  { id: 'rooftop',   name: 'Neon Rooftop',    tag: 'URBAN',      desc: 'City lights and neon signs flicker in the dark.',   color: '#00e5ff', icon: '▣' },
-  { id: 'temple',    name: 'Ancient Temple',   tag: 'MYSTIC',     desc: 'Sacred grounds charged with ancient energy.',        color: '#fcd34d', icon: '◈' },
-  { id: 'mountain',  name: 'Frozen Peak',      tag: 'ICY',        desc: 'Bitter cold at the top of the world.',               color: '#a5f3fc', icon: '△' },
-  { id: 'cyberlab',  name: 'Cyber Lab',        tag: 'DIGITAL',    desc: 'Glitch-ridden digital space. Expect chaos.',         color: '#c084fc', icon: '◉' },
-  { id: 'forest',    name: 'Dark Forest',      tag: 'PRIMAL',     desc: 'Ancient trees reclaim the battlefield.',             color: '#34d399', icon: '◆' },
-  { id: 'scrapyard', name: 'Scrapyard',        tag: 'WASTELAND',  desc: 'Rusted machines and desert dust.',                   color: '#fb923c', icon: '⊕' },
-];
+const STAGES = STAGE_LIST;
 
-export default function StageSelect({ onSelect, onBack }) {
+export default function StageSelect({ onSelect, onBack, previewOnly = false }) {
   const [selected, setSelected] = useState(STAGES[0].id);
   const stage = STAGES.find(s => s.id === selected);
 
@@ -35,7 +29,7 @@ export default function StageSelect({ onSelect, onBack }) {
 
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, gap: 40 }}>
         {/* Stage grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, width: 'clamp(320px, 48vw, 560px)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: 10, width: 'clamp(320px, 48vw, 620px)' }}>
           {STAGES.map((s) => {
             const isSel = s.id === selected;
             return (
@@ -66,12 +60,27 @@ export default function StageSelect({ onSelect, onBack }) {
             <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 10, lineHeight: 1.5 }}>{stage.desc}</div>
           </div>
           <div style={{ width: '100%', height: 1, background: 'rgba(255,255,255,0.07)' }} />
-          <button className="btn primary"
-            onClick={() => { audioManager.playUIClick(); onSelect(selected); }}
-            onMouseEnter={() => audioManager.playUIHover()}
-            style={{ padding: '15px', fontSize: 15, background: stage.color, borderColor: stage.color }}>
-            Fight Here
-          </button>
+          <div style={{ height: 120, position: 'relative', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', overflow: 'hidden' }}>
+            {stage.platforms.map((p) => (
+              <div key={p.id} style={{
+                position: 'absolute',
+                left: `${(p.x - p.width / 2) / 1280 * 100}%`,
+                top: `${(p.y - 300) / 380 * 100}%`,
+                width: `${p.width / 1280 * 100}%`,
+                height: p.kind === 'solid' ? 12 : 7,
+                background: p.kind === 'solid' ? stage.color : 'rgba(255,255,255,0.65)',
+                boxShadow: `0 0 12px ${stage.color}55`,
+              }} />
+            ))}
+          </div>
+          {!previewOnly && (
+            <button className="btn primary"
+              onClick={() => { audioManager.playUIClick(); onSelect(selected); }}
+              onMouseEnter={() => audioManager.playUIHover()}
+              style={{ padding: '15px', fontSize: 15, background: stage.color, borderColor: stage.color }}>
+              Fight Here
+            </button>
+          )}
         </div>
       </div>
     </div>

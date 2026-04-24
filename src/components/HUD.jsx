@@ -125,7 +125,7 @@ function Stocks({ ent, flipped }) {
   );
 }
 
-export default function HUD({ player, enemy, keybinds }) {
+export default function HUD({ player, enemy, keybinds, mode = 'smash' }) {
   if (!player || !enemy || !keybinds) return null;
 
   const SideHUD = ({ ent, flipped, abilities, cds }) => (
@@ -168,7 +168,12 @@ export default function HUD({ player, enemy, keybinds }) {
           }}>
             {Math.floor(ent.damagePercent)}<span style={{ fontSize: 22 }}>%</span>
           </span>
-          <Stocks ent={ent} flipped={flipped} />
+          {mode !== 'training' && <Stocks ent={ent} flipped={flipped} />}
+          {mode === 'training' && (
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 800 }}>
+              Training
+            </span>
+          )}
         </div>
       </div>
 

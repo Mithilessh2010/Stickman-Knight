@@ -1,5 +1,5 @@
 import { ARENA_W, ARENA_H, GROUND_Y, ENTITY_HEIGHT, BLAST_ZONE } from './constants.js';
-import { STAGE_PLATFORMS } from './stage.js';
+import { getActiveStage, STAGE_PLATFORMS } from './stage.js';
 
 function drawLowerAtmosphere(ctx, colors) {
   const g = ctx.createLinearGradient(0, GROUND_Y - 60, 0, ARENA_H);
@@ -108,7 +108,27 @@ function drawArenaPlatform(ctx, platform, time, isMain) {
 
 function drawStage(ctx, time) {
   for (const platform of STAGE_PLATFORMS) {
-    drawArenaPlatform(ctx, platform, time, platform.id === 'main');
+    drawArenaPlatform(ctx, platform, time, platform.kind === 'solid');
+  }
+  const stage = getActiveStage();
+  if (stage.lavaBottom) {
+    ctx.save();
+    const y = GROUND_Y + 62;
+    const grad = ctx.createLinearGradient(0, y - 20, 0, ARENA_H);
+    grad.addColorStop(0, 'rgba(251, 146, 60, 0)');
+    grad.addColorStop(0.35, 'rgba(251, 146, 60, 0.55)');
+    grad.addColorStop(1, '#7c2d12');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, y - 22, ARENA_W, ARENA_H - y + 22);
+    ctx.globalAlpha = 0.45 + Math.sin(time * 0.08) * 0.08;
+    ctx.fillStyle = '#fbbf24';
+    for (let i = 0; i < 9; i++) {
+      const x = i * 160 + (Math.sin(time * 0.03 + i) * 28);
+      ctx.beginPath();
+      ctx.ellipse(x, y + Math.sin(time * 0.05 + i) * 10, 52, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 }
 
@@ -1437,6 +1457,7 @@ function drawSmashOverlays(ctx, world) {
 }
 
 export function renderWorld(ctx, world, stage = 'rooftop', time = 0) {
+  const stageDef = getActiveStage();
   let sx = 0, sy = 0;
   if (world.shake.mag > 0) {
     sx = (Math.random() - 0.5) * world.shake.mag;
@@ -1444,7 +1465,7 @@ export function renderWorld(ctx, world, stage = 'rooftop', time = 0) {
   }
   ctx.save();
   ctx.translate(sx, sy);
-  drawBackground(ctx, stage, time);
+  drawBackground(ctx, stageDef.background || stage, time);
   drawStage(ctx, time);
 
   const ents = [world.player, world.enemy].slice().sort((a, b) => a.pos.y - b.pos.y);

@@ -11,9 +11,12 @@ import {
   DROP_THROUGH_FRAMES,
   findCurrentPlatform,
   findLandingPlatform,
+  getActiveStage,
   getSpawnPoints,
   getStageBounds,
-  getStagePlatform
+  getStagePlatform,
+  setActiveStage,
+  updateStage
 } from './stage.js';
 
 export function createEntity(charId, spawn, facing, isPlayer) {
@@ -57,7 +60,9 @@ export function createEntity(charId, spawn, facing, isPlayer) {
   };
 }
 
-export function createWorld(playerId, enemyId) {
+export function createWorld(playerId, enemyId, options = {}) {
+  setActiveStage(options.stage || 'battlefield');
+  updateStage(0);
   const spawn = getSpawnPoints();
   const player = createEntity(playerId, spawn.player, 1, true);
   const enemy = createEntity(enemyId, spawn.enemy, -1, false);
@@ -77,6 +82,10 @@ export function createWorld(playerId, enemyId) {
     victoryPlayed: false,
     hitPause: 0,
     koText: null,
+    mode: options.mode || 'smash',
+    training: options.mode === 'training',
+    aiDifficulty: options.aiDifficulty || 1,
+    stageId: options.stage || 'battlefield',
     tick: 0
   };
 }
@@ -705,6 +714,12 @@ function addShake(world, mag, time) {
   if (time > world.shake.time) world.shake.time = time;
 }
 
+function approach(current, target, amount) {
+  if (current < target) return Math.min(target, current + amount);
+  if (current > target) return Math.max(target, current - amount);
+  return target;
+}
+
 function hasLeftBlastZone(ent) {
   return ent.pos.x < BLAST_ZONE.left ||
     ent.pos.x > BLAST_ZONE.right ||
@@ -730,13 +745,13 @@ function spawnKoBurst(world, ent, dir) {
     spawnSpark(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, i % 2 ? color : '#ffffff');
   }
   addShake(world, 18, 22);
-  world.hitPause = Math.max(world.hitPause, 10);
+  world.hitPause = Math.max(world.hitPause, 4);
 }
 
 function koEntity(world, ent) {
   if (ent.dead || world.winner) return;
   const dir = ent.pos.x < ARENA_W / 2 ? -1 : 1;
-  ent.stocks = Math.max(0, ent.stocks - 1);
+  ent.stocks = world.training ? ent.stocks : Math.max(0, ent.stocks - 1);
   ent.dead = true;
   ent.state = 'dead';
   ent.stateTime = 0;
@@ -745,9 +760,9 @@ function koEntity(world, ent) {
   ent.knockTime = 0;
   ent.onGround = false;
   ent.platformId = null;
-  ent.respawnTimer = ent.stocks > 0 ? RESPAWN_DELAY : 0;
+  ent.respawnTimer = (ent.stocks > 0 || world.training) ? RESPAWN_DELAY : 0;
   spawnKoBurst(world, ent, dir);
-  if (ent.stocks <= 0) {
+  if (!world.training && ent.stocks <= 0) {
     world.winner = ent === world.player ? 'enemy' : 'player';
   }
 }
@@ -777,6 +792,10 @@ function respawnEntity(world, ent) {
 
 function applyHit(world, attacker, victim, damage, knockback) {
   if (victim.iframes > 0 || victim.dead) return;
+  if (!attacker.isPlayer && world.aiDifficulty) {
+    damage *= world.aiDifficulty;
+    knockback *= Math.min(1.45, 0.86 + world.aiDifficulty * 0.18);
+  }
 
   if (victim.parryActive > 0) {
     victim.parryActive = 0;
@@ -836,7 +855,7 @@ function applyHit(world, attacker, victim, damage, knockback) {
   }
   if (damage >= 20 || launched >= 9) spawnShockwave(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, attacker.character.color);
   addShake(world, Math.min(16, damage * 0.35 + launched * 0.65), 9 + Math.min(10, Math.floor(launched)));
-  world.hitPause = Math.max(world.hitPause, Math.min(HIT_PAUSE_MAX, 4 + Math.floor(launched * 0.6)));
+  world.hitPause = Math.max(world.hitPause, Math.min(HIT_PAUSE_MAX, 2 + Math.floor(launched * 0.25)));
 }
 
 function updateEntity(world, ent) {
@@ -913,6 +932,10 @@ function updateEntity(world, ent) {
   const jumpNow = inp.jumpPressed || (!ent.isPlayer && inp.jump);
   const currentPlatform = ent.onGround ? (getStagePlatform(ent.platformId) || findCurrentPlatform(ent.pos.x, ent.pos.y)) : null;
   const inVictory = world.winner && ((world.winner === 'player' && ent === world.player) || (world.winner === 'enemy' && ent === world.enemy));
+  if (currentPlatform && (currentPlatform.moveX || currentPlatform.moveY)) {
+    ent.pos.x += currentPlatform.x - (currentPlatform.prevX ?? currentPlatform.x);
+    ent.pos.y += currentPlatform.y - (currentPlatform.prevY ?? currentPlatform.y);
+  }
 
   if (canAct && ent.queuedAction) {
     tryAction(world, ent, ent.queuedAction);
@@ -924,11 +947,12 @@ function updateEntity(world, ent) {
   // Apply curse debuff
   if (ent._cursed && ent._cursed.duration > 0) speedMul *= ent._cursed.speedReduction;
   const baseSpeed = ent.character.speed * speedMul;
+  const accel = ent.onGround ? Math.max(0.42, baseSpeed * 0.18) : Math.max(0.22, baseSpeed * 0.085);
   if (inVictory) {
     ent.vel.vx *= FRICTION;
   } else if (canAct && ent.knockTime <= 0) {
-    if (inp.left) ent.vel.vx = -baseSpeed;
-    else if (inp.right) ent.vel.vx = baseSpeed;
+    if (inp.left) ent.vel.vx = approach(ent.vel.vx, -baseSpeed, accel);
+    else if (inp.right) ent.vel.vx = approach(ent.vel.vx, baseSpeed, accel);
     else ent.vel.vx *= ent.onGround ? FRICTION : AIR_FRICTION;
 
     if (inp.down && jumpNow && currentPlatform?.kind === 'soft') {
@@ -966,7 +990,8 @@ function updateEntity(world, ent) {
 
   updateEntityState(world, ent);
   ent.input.jumpPressed = false;
-  if (!world.winner && hasLeftBlastZone(ent)) koEntity(world, ent);
+  const stage = getActiveStage();
+  if (!world.winner && (hasLeftBlastZone(ent) || (stage.lavaBottom && ent.pos.y > GROUND_Y + 72))) koEntity(world, ent);
 }
 
 function updateProjectiles(world) {
@@ -1074,6 +1099,7 @@ function updateMinions(world) {
 
 export function tick(world) {
   world.tick += 1;
+  updateStage(world.tick);
   if (world.koText) {
     world.koText.time -= 1;
     if (world.koText.time <= 0) world.koText = null;

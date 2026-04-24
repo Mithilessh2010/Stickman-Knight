@@ -10,7 +10,7 @@ export const ENTITY_HEIGHT = 78;
 export const DEFAULT_STOCKS = 3;
 export const RESPAWN_INVINCIBILITY = 150;
 export const RESPAWN_DELAY = 72;
-export const HIT_PAUSE_MAX = 14;
+export const HIT_PAUSE_MAX = 6;
 export const BLAST_ZONE = {
   left: -210,
   right: ARENA_W + 210,
