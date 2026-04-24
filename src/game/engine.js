@@ -798,6 +798,27 @@ function removeInvalidWorldObjects(world) {
   world.minions = (world.minions || []).filter((m) =>
     m && Number.isFinite(m.x) && Number.isFinite(m.y) && Number.isFinite(m.vx) && Number.isFinite(m.vy)
   );
+  world.particles = (world.particles || []).filter((p) =>
+    p &&
+    Number.isFinite(p.x) &&
+    Number.isFinite(p.y) &&
+    Number.isFinite(p.vx) &&
+    Number.isFinite(p.vy) &&
+    Number.isFinite(p.life) &&
+    Number.isFinite(p.maxLife) &&
+    Number.isFinite(p.size) &&
+    Number.isFinite(p.gravity)
+  );
+  world.effects = (world.effects || []).filter((e) => {
+    if (!e || !Number.isFinite(e.life) || !Number.isFinite(e.maxLife)) return false;
+    if (e.kind === 'ring' || e.kind === 'shockwave') {
+      return Number.isFinite(e.x) && Number.isFinite(e.y) && Number.isFinite(e.r);
+    }
+    if (e.kind === 'slash') {
+      return Number.isFinite(e.x) && Number.isFinite(e.y) && Number.isFinite(e.angle) && Number.isFinite(e.length);
+    }
+    return true;
+  });
 }
 
 function spawnKoBurst(world, ent, dir) {

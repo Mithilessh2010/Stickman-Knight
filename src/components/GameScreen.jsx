@@ -39,16 +39,18 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds
     const STEP = 1000 / 60;
     let hudTimer = 0;
     let ended = false;
-    let errorLogged = false;
+    let updateErrorLogged = false;
+    let renderErrorLogged = false;
 
     const loop = (now) => {
-      try {
-        const rawDt = now - last;
-        const dt = Number.isFinite(rawDt) ? Math.min(64, Math.max(0, rawDt)) : STEP;
-        last = now;
-        if (!pausedRef.current) {
-          acc += dt;
-          let steps = 0;
+      const rawDt = now - last;
+      const dt = Number.isFinite(rawDt) ? Math.min(64, Math.max(0, rawDt)) : STEP;
+      last = now;
+
+      if (!pausedRef.current) {
+        acc += dt;
+        let steps = 0;
+        try {
           while (acc >= STEP && steps < 3) {
             applyPlayerInput(world, input);
             updateAI(world, world.enemy, world.player);
@@ -61,18 +63,31 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds
               setTimeout(() => onGameOver(world.winner), 700);
             }
           }
-          if (steps === 3 && acc >= STEP) acc = 0;
-        } else {
+          updateErrorLogged = false;
+        } catch (error) {
           acc = 0;
+          if (!updateErrorLogged) {
+            console.warn('Battle loop recovered after an update error:', error);
+            updateErrorLogged = true;
+          }
         }
-        renderWorld(ctx, world, stage, now / 16);
-        if (hudTimer > 3) { hudTimer = 0; force(); }
-      } catch (error) {
+        if (steps === 3 && acc >= STEP) acc = 0;
+      } else {
         acc = 0;
-        if (!errorLogged) {
-          console.warn('Battle loop recovered after an update/render error:', error);
-          errorLogged = true;
+      }
+
+      try {
+        renderWorld(ctx, world, stage, now / 16);
+        renderErrorLogged = false;
+      } catch (error) {
+        if (!renderErrorLogged) {
+          console.warn('Battle loop recovered after a render error:', error);
+          renderErrorLogged = true;
         }
+      }
+
+      try {
+        if (hudTimer > 3) { hudTimer = 0; force(); }
       } finally {
         raf = requestAnimationFrame(loop);
       }
