@@ -11,7 +11,7 @@ const BG_CHARS = [
   { id: 'assassin',x: 0.88, y: 0.72, scale: 2.0, facing: -1 },
 ];
 
-export default function StartScreen({ onArena, onSmash, onTraining, onCharacters, onMaps, onSettings, onHelp }) {
+export default function StartScreen({ onStory, onQuickSmash, onTraining, onCharacters, onMaps, onSettings, onHelp }) {
   const canvasRef = useRef(null);
   const { keybinds } = useContext(KeybindsContext) || { keybinds: null };
 
@@ -22,11 +22,11 @@ export default function StartScreen({ onArena, onSmash, onTraining, onCharacters
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.code === 'Space' || e.code === 'Enter') { audioManager.playUIClick(); onSmash(); }
+      if (e.code === 'Space' || e.code === 'Enter') { audioManager.playUIClick(); onQuickSmash(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onSmash]);
+  }, [onQuickSmash]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -63,7 +63,7 @@ export default function StartScreen({ onArena, onSmash, onTraining, onCharacters
       <button className="btn ghost" onClick={() => { audioManager.playUIClick(); onSettings(); }}
         style={{ position: 'absolute', top: 20, right: 20, padding: '8px 14px', fontSize: 12, zIndex: 10 }}
         onMouseEnter={() => audioManager.playUIHover()}>
-        ⚙
+        Settings
       </button>
 
       {/* Center content */}
@@ -103,24 +103,24 @@ export default function StartScreen({ onArena, onSmash, onTraining, onCharacters
         <div style={{ width: 60, height: 1, background: 'rgba(255,255,255,0.15)', margin: '28px auto' }} />
 
         {/* Press to play */}
-        <div className="start-prompt" onClick={() => { audioManager.playUIClick(); onSmash(); }}
+        <div className="start-prompt" onClick={() => { audioManager.playUIClick(); onQuickSmash(); }}
           style={{ cursor: 'pointer', marginBottom: 36 }}>
-          Press Space for Smash Mode
+          Press Space for Quick Smash
         </div>
 
         {/* Nav buttons */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(180px, 1fr))', gap: 10, width: 'min(520px, 92vw)' }}>
-          <button className="btn primary" onClick={() => { audioManager.playUIClick(); onArena(); }}
+          <button className="btn primary" onClick={() => { audioManager.playUIClick(); onStory(); }}
             style={{ padding: '13px 22px', fontSize: 14 }} onMouseEnter={() => audioManager.playUIHover()}>
-            Arena Mode
+            Story Mode
           </button>
-          <button className="btn primary" onClick={() => { audioManager.playUIClick(); onSmash(); }}
+          <button className="btn primary" onClick={() => { audioManager.playUIClick(); onQuickSmash(); }}
             style={{ padding: '13px 22px', fontSize: 14, background: '#fff', borderColor: '#fff' }} onMouseEnter={() => audioManager.playUIHover()}>
-            Smash Mode
+            Quick Smash
           </button>
           <button className="btn" onClick={() => { audioManager.playUIClick(); onTraining(); }}
             style={{ fontSize: 13 }} onMouseEnter={() => audioManager.playUIHover()}>
-            Training Mode
+            Training
           </button>
           <button className="btn" onClick={() => { audioManager.playUIClick(); onCharacters(); }}
             style={{ fontSize: 13 }} onMouseEnter={() => audioManager.playUIHover()}>

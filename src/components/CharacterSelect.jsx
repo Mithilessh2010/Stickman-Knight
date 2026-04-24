@@ -132,6 +132,13 @@ export default function CharacterSelect({
   const ids = Object.keys(CHARACTERS);
   const [selected, setSelected] = useState(ids[0]);
   const ch = CHARACTERS[selected];
+  const infoCards = title === 'QUICK SMASH'
+    ? [['Random Rival', 'Opponent is picked from the full roster'], ['Random Map', 'Stage is selected automatically'], ['Instant Match', 'Pick your fighter and start']]
+    : title === 'STORY MODE'
+      ? [['Roster Ladder', 'Fight challengers one by one'], ['Rival Scenes', 'Each fight opens with a short intro'], ['Rising Difficulty', 'Opponents get stronger over time']]
+      : title === 'TRAINING'
+        ? [['No Pressure', 'Stocks are hidden and KOs respawn'], ['Map Pick Next', 'Choose where to practice'], ['Test Kits', 'Try movement, attacks, and ultimates']]
+        : [['Single Match', 'Jump straight into a one-off fight'], ['Random Rival', 'A new opponent is chosen each run'], ['Stage Pick Next', 'Choose the arena after your fighter']];
   const groupedIds = ids.reduce((groups, id) => {
     const key = CHARACTERS[id].archetype || 'Specialists';
     if (!groups[key]) groups[key] = [];
@@ -198,14 +205,10 @@ export default function CharacterSelect({
           borderLeft: '3px solid var(--accent)',
           borderRadius: 2,
           }}>
-          {[
-            ['Single Match', 'Jump straight into a one-off fight'],
-            ['Random Rival', 'A new opponent is chosen each run'],
-            ['Stage Pick Next', 'Choose the arena after your fighter'],
-          ].map(([title, copy]) => (
-            <div key={title} style={{ minWidth: 180, flex: '1 1 180px', textAlign: 'left' }}>
+          {infoCards.map(([cardTitle, copy]) => (
+            <div key={cardTitle} style={{ minWidth: 180, flex: '1 1 180px', textAlign: 'left' }}>
               <div style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--accent)', fontWeight: 700, marginBottom: 4 }}>
-                {title}
+                {cardTitle}
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.45 }}>
                 {copy}
