@@ -39,32 +39,43 @@ export default function GameScreen({ playerChar, enemyChar, onGameOver, keybinds
     const STEP = 1000 / 60;
     let hudTimer = 0;
     let ended = false;
+    let errorLogged = false;
 
     const loop = (now) => {
-      const dt = Math.min(64, now - last);
-      last = now;
-      if (!pausedRef.current) {
-        acc += dt;
-        let steps = 0;
-        while (acc >= STEP && steps < 3) {
-          applyPlayerInput(world, input);
-          updateAI(world, world.enemy, world.player);
-          tick(world);
-          acc -= STEP;
-          steps += 1;
-          hudTimer += 1;
-          if (world.winner && !ended) {
-            ended = true;
-            setTimeout(() => onGameOver(world.winner), 700);
+      try {
+        const rawDt = now - last;
+        const dt = Number.isFinite(rawDt) ? Math.min(64, Math.max(0, rawDt)) : STEP;
+        last = now;
+        if (!pausedRef.current) {
+          acc += dt;
+          let steps = 0;
+          while (acc >= STEP && steps < 3) {
+            applyPlayerInput(world, input);
+            updateAI(world, world.enemy, world.player);
+            tick(world);
+            acc -= STEP;
+            steps += 1;
+            hudTimer += 1;
+            if (world.winner && !ended) {
+              ended = true;
+              setTimeout(() => onGameOver(world.winner), 700);
+            }
           }
+          if (steps === 3 && acc >= STEP) acc = 0;
+        } else {
+          acc = 0;
         }
-        if (steps === 3 && acc >= STEP) acc = 0;
-      } else {
+        renderWorld(ctx, world, stage, now / 16);
+        if (hudTimer > 3) { hudTimer = 0; force(); }
+      } catch (error) {
         acc = 0;
+        if (!errorLogged) {
+          console.warn('Battle loop recovered after an update/render error:', error);
+          errorLogged = true;
+        }
+      } finally {
+        raf = requestAnimationFrame(loop);
       }
-      renderWorld(ctx, world, stage, now / 16);
-      if (hudTimer > 3) { hudTimer = 0; force(); }
-      raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
 

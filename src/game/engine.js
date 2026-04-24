@@ -744,6 +744,62 @@ function hasLeftBlastZone(ent) {
     ent.pos.y > BLAST_ZONE.bottom;
 }
 
+function finiteOr(value, fallback) {
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function sanitizeEntity(world, ent) {
+  if (!ent) return;
+  const spawn = getSpawnPoints()[ent.isPlayer ? 'player' : 'enemy'];
+  const hadInvalidPosition =
+    !Number.isFinite(ent.pos?.x) ||
+    !Number.isFinite(ent.pos?.y) ||
+    !Number.isFinite(ent.vel?.vx) ||
+    !Number.isFinite(ent.vel?.vy);
+
+  if (hadInvalidPosition) {
+    console.warn(`Reset invalid battle position for ${ent.character?.name || ent.id}.`);
+    ent.pos.x = spawn.x;
+    ent.pos.y = spawn.y;
+    ent.vel.vx = 0;
+    ent.vel.vy = 0;
+    ent.onGround = false;
+    ent.platformId = null;
+    ent.dropTimer = 0;
+  } else {
+    ent.pos.x = finiteOr(ent.pos.x, spawn.x);
+    ent.pos.y = finiteOr(ent.pos.y, spawn.y);
+    ent.vel.vx = Math.max(-28, Math.min(28, finiteOr(ent.vel.vx, 0)));
+    ent.vel.vy = Math.max(-28, Math.min(28, finiteOr(ent.vel.vy, 0)));
+  }
+
+  for (const k of ACTION_KEYS) ent.cooldowns[k] = Math.max(0, finiteOr(ent.cooldowns[k], 0));
+  ent.damagePercent = Math.max(0, finiteOr(ent.damagePercent, 0));
+  ent.hurtTime = Math.max(0, finiteOr(ent.hurtTime, 0));
+  ent.knockTime = Math.max(0, finiteOr(ent.knockTime, 0));
+  ent.frozen = Math.max(0, finiteOr(ent.frozen, 0));
+  ent.respawnTimer = Math.max(0, finiteOr(ent.respawnTimer, 0));
+  ent.respawnInvincible = Math.max(0, finiteOr(ent.respawnInvincible, 0));
+}
+
+function removeInvalidWorldObjects(world) {
+  world.projectiles = world.projectiles.filter((p) =>
+    p && Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.vx) && Number.isFinite(p.vy) && Number.isFinite(p.life)
+  );
+  world.shockwaves = world.shockwaves.filter((s) =>
+    s && Number.isFinite(s.x) && Number.isFinite(s.y) && Number.isFinite(s.speed) && Number.isFinite(s.range)
+  );
+  world.fallingObjects = world.fallingObjects.filter((f) =>
+    f && Number.isFinite(f.x) && Number.isFinite(f.y) && Number.isFinite(f.fall) && Number.isFinite(f.target)
+  );
+  world.lavaPools = (world.lavaPools || []).filter((pool) =>
+    pool && Number.isFinite(pool.x) && Number.isFinite(pool.radius) && Number.isFinite(pool.duration)
+  );
+  world.minions = (world.minions || []).filter((m) =>
+    m && Number.isFinite(m.x) && Number.isFinite(m.y) && Number.isFinite(m.vx) && Number.isFinite(m.vy)
+  );
+}
+
 function spawnKoBurst(world, ent, dir) {
   const color = ent.character.color;
   world.koText = {
@@ -1133,6 +1189,9 @@ function updateMinions(world) {
 export function tick(world) {
   world.tick += 1;
   updateStage(world.tick);
+  sanitizeEntity(world, world.player);
+  sanitizeEntity(world, world.enemy);
+  removeInvalidWorldObjects(world);
   if (world.koText) {
     world.koText.time -= 1;
     if (world.koText.time <= 0) world.koText = null;
@@ -1153,6 +1212,9 @@ export function tick(world) {
   updateMinions(world);
   trimWorldLists(world);
   updateParticles(world);
+  sanitizeEntity(world, world.player);
+  sanitizeEntity(world, world.enemy);
+  removeInvalidWorldObjects(world);
   if (world.shake.time > 0) world.shake.time -= 1;
   else world.shake.mag = 0;
   if (world.winner && !world.victoryPlayed) {
