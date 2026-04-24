@@ -4,9 +4,9 @@ import { drawStickmanPortrait } from '../game/render.js';
 import { audioManager } from '../game/audio.js';
 
 const HP_MIN = 78;
-const HP_MAX = 140;
+const HP_MAX = 150;
 const SPD_MIN = 2.5;
-const SPD_MAX = 4.2;
+const SPD_MAX = 4.3;
 
 function StatBar({ label, value, min, max, color }) {
   const pct = Math.max(0, Math.min(1, (value - min) / (max - min))) * 100;
@@ -124,6 +124,12 @@ export default function CharacterSelect({ onSelect, onSettings, onBack }) {
   const ids = Object.keys(CHARACTERS);
   const [selected, setSelected] = useState(ids[0]);
   const ch = CHARACTERS[selected];
+  const groupedIds = ids.reduce((groups, id) => {
+    const key = CHARACTERS[id].archetype || 'Specialists';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(id);
+    return groups;
+  }, {});
   const abilities = [
     { label: 'Basic', ability: ch.basic, isUlt: false },
     { label: 'Ability 1', ability: ch.ability1, isUlt: false },
@@ -204,17 +210,30 @@ export default function CharacterSelect({ onSelect, onSettings, onBack }) {
         </div>
 
         <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div style={{ flex: '1 1 520px', minWidth: 'min(100%, 320px)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}>
-              {ids.map((id) => (
-                <QuickPlayCharCard
-                  key={id}
-                  charId={id}
-                  selected={selected === id}
-                  onSelect={setSelected}
-                />
-              ))}
-            </div>
+          <div style={{ flex: '1 1 600px', minWidth: 'min(100%, 320px)', display: 'grid', gap: 18 }}>
+            {Object.entries(groupedIds).map(([group, groupIds]) => (
+              <section key={group}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontSize: 9, letterSpacing: '0.22em', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>
+                    {group}
+                  </span>
+                  <span style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.07)' }} />
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', fontWeight: 700 }}>
+                    {groupIds.length}
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(112px, 1fr))', gap: 10 }}>
+                  {groupIds.map((id) => (
+                    <QuickPlayCharCard
+                      key={id}
+                      charId={id}
+                      selected={selected === id}
+                      onSelect={setSelected}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
           </div>
 
           <div style={{
@@ -251,7 +270,7 @@ export default function CharacterSelect({ onSelect, onSettings, onBack }) {
               </div>
 
               <div style={{ display: 'grid', gap: 12, marginTop: 20 }}>
-                <StatBar label="Health" value={ch.maxHp} min={HP_MIN} max={HP_MAX} color={ch.color} />
+                <StatBar label="Weight" value={ch.maxHp} min={HP_MIN} max={HP_MAX} color={ch.color} />
                 <StatBar label="Speed" value={ch.speed} min={SPD_MIN} max={SPD_MAX} color={ch.accent} />
               </div>
 

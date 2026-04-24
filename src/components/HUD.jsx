@@ -79,18 +79,27 @@ function AbilitySlot({ ability, keyLabel, cd, isUlt, charColor }) {
   );
 }
 
-function HealthBar({ pct, color, flipped }) {
-  const barColor = pct > 60 ? '#00ff9d' : pct > 30 ? '#ffb800' : '#ff3355';
+function damageColor(pct) {
+  if (pct >= 130) return '#ff3355';
+  if (pct >= 80) return '#ff9500';
+  if (pct >= 40) return '#ffdf5d';
+  return '#f0f0f8';
+}
+
+function DamageMeter({ damage, flipped }) {
+  const capped = Math.min(180, damage);
+  const fill = capped / 180 * 100;
+  const barColor = damageColor(damage);
   return (
     <div style={{ width: '100%', position: 'relative' }}>
       <div style={{
-        width: '100%', height: 10,
+        width: '100%', height: 8,
         background: 'rgba(255,255,255,0.06)',
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 1, overflow: 'hidden',
       }}>
         <div style={{
-          width: `${pct}%`, height: '100%',
+          width: `${fill}%`, height: '100%',
           background: `linear-gradient(${flipped ? '270deg' : '90deg'}, ${barColor}cc, ${barColor})`,
           float: flipped ? 'right' : 'none',
           transition: 'width 0.12s ease-out',
@@ -101,12 +110,25 @@ function HealthBar({ pct, color, flipped }) {
   );
 }
 
+function Stocks({ ent, flipped }) {
+  return (
+    <div style={{ display: 'flex', gap: 5, flexDirection: flipped ? 'row-reverse' : 'row' }}>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} style={{
+          width: 12, height: 12, borderRadius: '50%',
+          background: i < ent.stocks ? ent.character.color : 'rgba(255,255,255,0.08)',
+          border: `1px solid ${i < ent.stocks ? ent.character.color : 'rgba(255,255,255,0.12)'}`,
+          boxShadow: i < ent.stocks ? `0 0 8px ${ent.character.color}55` : 'none',
+        }} />
+      ))}
+    </div>
+  );
+}
+
 export default function HUD({ player, enemy, keybinds }) {
   if (!player || !enemy || !keybinds) return null;
-  const pPct = Math.max(0, player.hp / player.character.maxHp) * 100;
-  const ePct = Math.max(0, enemy.hp / enemy.character.maxHp) * 100;
 
-  const SideHUD = ({ ent, pct, flipped, abilities, cds }) => (
+  const SideHUD = ({ ent, flipped, abilities, cds }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: 'clamp(200px, 22vw, 290px)', alignItems: flipped ? 'flex-end' : 'flex-start' }}>
       {/* Name row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexDirection: flipped ? 'row-reverse' : 'row' }}>
@@ -132,13 +154,21 @@ export default function HUD({ player, enemy, keybinds }) {
         </div>
       </div>
 
-      {/* HP bar + number */}
+      {/* Percentage + stocks */}
       <div style={{ width: '100%' }}>
-        <HealthBar pct={pct} flipped={flipped} />
-        <div style={{ display: 'flex', justifyContent: flipped ? 'flex-end' : 'flex-start', marginTop: 3 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.05em' }}>
-            {Math.ceil(ent.hp)}<span style={{ fontSize: 9, opacity: 0.5 }}>/{ent.character.maxHp}</span>
+        <DamageMeter damage={ent.damagePercent} flipped={flipped} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexDirection: flipped ? 'row-reverse' : 'row', marginTop: 4 }}>
+          <span style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 42,
+            lineHeight: 0.85,
+            color: damageColor(ent.damagePercent),
+            letterSpacing: '0.03em',
+            textShadow: `0 0 18px ${damageColor(ent.damagePercent)}40`,
+          }}>
+            {Math.floor(ent.damagePercent)}<span style={{ fontSize: 22 }}>%</span>
           </span>
+          <Stocks ent={ent} flipped={flipped} />
         </div>
       </div>
 
@@ -162,8 +192,8 @@ export default function HUD({ player, enemy, keybinds }) {
 
   return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-      <SideHUD ent={player} pct={pPct} flipped={false} abilities={playerAbilities} cds={player.cooldowns} />
-      <SideHUD ent={enemy} pct={ePct} flipped={true} />
+      <SideHUD ent={player} flipped={false} abilities={playerAbilities} cds={player.cooldowns} />
+      <SideHUD ent={enemy} flipped={true} />
     </div>
   );
 }

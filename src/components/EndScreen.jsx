@@ -28,7 +28,7 @@ export default function EndScreen({ result, onRestart, onHome, isTournament, tou
 
   const accentColor = isChampion ? '#ff9500' : win ? '#00ff9d' : '#ff3355';
   const label = isChampion ? 'CHAMPION' : win ? 'VICTORY' : 'DEFEAT';
-  const sub = isChampion ? 'Tournament Conquered' : isTournament ? (win ? 'Advancing to next round' : 'Eliminated from tournament') : (win ? 'Opponent defeated' : 'You were defeated');
+  const sub = isChampion ? 'Tournament Conquered' : isTournament ? (win ? 'Advancing to next round' : 'Eliminated from tournament') : (win ? 'Opponent out of stocks' : 'You ran out of stocks');
   const keyHint = primaryGoesHome ? '[Enter / Space] Main Menu' : '[Enter / Space] Continue · [Esc] Main Menu';
 
   return (

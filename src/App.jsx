@@ -11,6 +11,7 @@ import TournamentScreen from './components/TournamentScreen.jsx';
 import { KeybindsContext } from './contexts/KeybindsContext.js';
 import { loadKeybinds } from './game/keybinds.js';
 import { advanceTournament, getTournamentState } from './game/tournament.js';
+import { CHARACTERS } from './game/characters.js';
 
 const SCREENS = {
   START: 'start',
@@ -61,7 +62,7 @@ export default function App() {
   const handleStart = useCallback(() => setScreen(SCREENS.SELECT), []);
 
   const handleSelect = useCallback((charId) => {
-    const pool = ['sword', 'spear', 'mage', 'brute', 'assassin', 'archer', 'elemental', 'summoner', 'paladin', 'berserker', 'gunslinger', 'necromancer'].filter((c) => c !== charId);
+    const pool = Object.keys(CHARACTERS).filter((c) => c !== charId);
     const ai = pool[Math.floor(Math.random() * pool.length)];
     setPlayerChar(charId);
     setEnemyChar(ai);

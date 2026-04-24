@@ -1,4 +1,7 @@
-import { ARENA_W, GROUND_Y, GRAVITY, FRICTION, AIR_FRICTION, MAX_FALL, ENTITY_HALF_W, ENTITY_HEIGHT } from './constants.js';
+import {
+  ARENA_W, GROUND_Y, GRAVITY, FRICTION, AIR_FRICTION, MAX_FALL, ENTITY_HALF_W, ENTITY_HEIGHT,
+  DEFAULT_STOCKS, RESPAWN_INVINCIBILITY, RESPAWN_DELAY, HIT_PAUSE_MAX, BLAST_ZONE
+} from './constants.js';
 import { CHARACTERS } from './characters.js';
 import {
   spawnHitBurst, spawnRing, spawnShockwave, spawnSlash, spawnSpark, spawnDust, spawnTrail, updateParticles
@@ -23,6 +26,8 @@ export function createEntity(charId, spawn, facing, isPlayer) {
     vel: { vx: 0, vy: 0 },
     facing,
     hp: ch.maxHp,
+    damagePercent: 0,
+    stocks: DEFAULT_STOCKS,
     onGround: false,
     state: 'fall',
     stateTime: 0,
@@ -39,12 +44,16 @@ export function createEntity(charId, spawn, facing, isPlayer) {
     shield: null,
     buff: null,
     dead: false,
+    respawnTimer: 0,
+    respawnInvincible: RESPAWN_INVINCIBILITY,
+    airJumps: 1,
+    maxAirJumps: 1,
     hitId: 0,
     platformId: null,
     dropTimer: 0,
     landTime: 0,
     deathLanded: false,
-    input: { left: false, right: false, down: false, jump: false }
+    input: { left: false, right: false, down: false, jump: false, jumpPressed: false }
   };
 }
 
@@ -66,6 +75,8 @@ export function createWorld(playerId, enemyId) {
     overTime: 0,
     winner: null,
     victoryPlayed: false,
+    hitPause: 0,
+    koText: null,
     tick: 0
   };
 }
@@ -179,14 +190,14 @@ function onActiveEnter(world, ent) {
       const isBolt = id === 'mage' || id === 'elemental' || id === 'summoner';
       const isArrow = id === 'archer';
       world.projectiles.push({
-        kind: isBolt ? 'bolt' : isArrow ? 'arrow' : 'spear',
+        kind: def.projectileKind || (isBolt ? 'bolt' : isArrow ? 'arrow' : 'spear'),
         owner: ent, hitId: ent.hitId,
         x: px, y: py, vx: def.projSpeed * f, vy: 0,
         life: def.projLife,
         damage: scaledDamage(ent, def.damage),
         knockback: def.knockback,
         color: def.projColor || ent.character.color,
-        radius: isBolt ? 8 : 6,
+        radius: (def.projectileKind || (isBolt ? 'bolt' : isArrow ? 'arrow' : 'spear')) === 'bolt' ? 8 : 6,
         rot: 0
       });
       break;
@@ -530,8 +541,9 @@ function onActiveTick(world, ent) {
         ent._auraActive.lastTick = (ent._auraActive.lastTick || 0) + 1;
         if (ent._auraActive.lastTick >= ent._auraActive.tickRate) {
           ent._auraActive.lastTick = 0;
-          if (ent.hp < ent.character.maxHp) {
-            ent.hp = Math.min(ent.character.maxHp, ent.hp + ent._auraActive.hpRestore);
+          if (ent.damagePercent > 0) {
+            ent.damagePercent = Math.max(0, ent.damagePercent - ent._auraActive.hpRestore);
+            ent.hp = Math.max(0, ent.character.maxHp - ent.damagePercent);
             spawnRing(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, '#fcd34d', 40);
           }
         }
@@ -604,12 +616,17 @@ function clampX(x) {
   return Math.max(bounds.left, Math.min(bounds.right, x));
 }
 
+function clampArenaX(x) {
+  return Math.max(BLAST_ZONE.left + 30, Math.min(BLAST_ZONE.right - 30, x));
+}
+
 function landOnPlatform(world, ent, platform) {
   const wasGrounded = ent.onGround;
   ent.pos.y = platform.y;
   ent.vel.vy = 0;
   ent.onGround = true;
   ent.platformId = platform.id;
+  ent.airJumps = ent.maxAirJumps;
   if (!wasGrounded) {
     ent.landTime = 12;
     spawnDust(world, ent.pos.x, platform.y);
@@ -639,6 +656,10 @@ function updateEntityState(world, ent) {
       ent.state = 'victory';
       return;
     }
+  }
+  if (ent.respawnInvincible > 0 && ent.stateTime < 90) {
+    ent.state = 'respawn';
+    return;
   }
   if (ent.action) {
     ent.state = 'cast';
@@ -684,10 +705,80 @@ function addShake(world, mag, time) {
   if (time > world.shake.time) world.shake.time = time;
 }
 
+function hasLeftBlastZone(ent) {
+  return ent.pos.x < BLAST_ZONE.left ||
+    ent.pos.x > BLAST_ZONE.right ||
+    ent.pos.y < BLAST_ZONE.top ||
+    ent.pos.y > BLAST_ZONE.bottom;
+}
+
+function spawnKoBurst(world, ent, dir) {
+  const color = ent.character.color;
+  world.koText = {
+    text: `${ent.character.name} KO`,
+    color,
+    time: 72,
+    maxTime: 72,
+    x: Math.max(190, Math.min(ARENA_W - 190, ent.pos.x)),
+    y: Math.max(130, Math.min(GROUND_Y - 160, ent.pos.y - ENTITY_HEIGHT / 2))
+  };
+  audioManager.playKo();
+  spawnHitBurst(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, '#ffffff', 40);
+  spawnRing(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, color, 130);
+  spawnShockwave(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, '#ffffff');
+  for (let i = 0; i < 18; i++) {
+    spawnSpark(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, i % 2 ? color : '#ffffff');
+  }
+  addShake(world, 18, 22);
+  world.hitPause = Math.max(world.hitPause, 10);
+}
+
+function koEntity(world, ent) {
+  if (ent.dead || world.winner) return;
+  const dir = ent.pos.x < ARENA_W / 2 ? -1 : 1;
+  ent.stocks = Math.max(0, ent.stocks - 1);
+  ent.dead = true;
+  ent.state = 'dead';
+  ent.stateTime = 0;
+  ent.action = null;
+  ent.hurtTime = 0;
+  ent.knockTime = 0;
+  ent.onGround = false;
+  ent.platformId = null;
+  ent.respawnTimer = ent.stocks > 0 ? RESPAWN_DELAY : 0;
+  spawnKoBurst(world, ent, dir);
+  if (ent.stocks <= 0) {
+    world.winner = ent === world.player ? 'enemy' : 'player';
+  }
+}
+
+function respawnEntity(world, ent) {
+  const spawn = getSpawnPoints()[ent.isPlayer ? 'player' : 'enemy'];
+  ent.pos.x = spawn.x;
+  ent.pos.y = spawn.y - 80;
+  ent.vel.vx = 0;
+  ent.vel.vy = 1.5;
+  ent.damagePercent = 0;
+  ent.hp = ent.character.maxHp;
+  ent.dead = false;
+  ent.deathLanded = false;
+  ent.respawnTimer = 0;
+  ent.iframes = RESPAWN_INVINCIBILITY;
+  ent.respawnInvincible = RESPAWN_INVINCIBILITY;
+  ent.airJumps = ent.maxAirJumps;
+  ent.action = null;
+  ent.hurtTime = 0;
+  ent.knockTime = 0;
+  ent.state = 'fall';
+  ent.stateTime = 0;
+  spawnRing(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, ent.character.color, 90);
+  spawnHitBurst(world, ent.pos.x, ent.pos.y - ENTITY_HEIGHT / 2, ent.character.color, 16);
+}
+
 function applyHit(world, attacker, victim, damage, knockback) {
   if (victim.iframes > 0 || victim.dead) return;
 
-  if (victim.parryActive > 0 && victim.character.id === 'sword') {
+  if (victim.parryActive > 0) {
     victim.parryActive = 0;
     victim.justParried = true;
     spawnRing(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, '#ffffff', 60);
@@ -716,7 +807,8 @@ function applyHit(world, attacker, victim, damage, knockback) {
     if (damage <= 0) return;
   }
 
-  victim.hp -= damage;
+  victim.damagePercent = Math.max(0, victim.damagePercent + damage);
+  victim.hp = Math.max(0, victim.character.maxHp - victim.damagePercent);
   victim.iframes = 14;
   victim.flashTime = 8;
   victim.hurtTime = 16;
@@ -727,10 +819,12 @@ function applyHit(world, attacker, victim, damage, knockback) {
   victim.landTime = 0;
 
   const dir = Math.sign(victim.pos.x - attacker.pos.x) || attacker.facing;
-  victim.vel.vx = dir * knockback;
-  victim.vel.vy = -Math.min(6, knockback * 0.6);
+  const scale = 1 + victim.damagePercent / 82 + Math.max(0, damage - 8) / 70;
+  const launched = knockback * scale;
+  victim.vel.vx = dir * launched;
+  victim.vel.vy = -Math.min(16, Math.max(4.5, launched * 0.62 + damage * 0.05));
   victim.onGround = false;
-  victim.knockTime = 14;
+  victim.knockTime = Math.min(38, 12 + Math.floor(launched * 1.15));
 
   // Play hit sound based on damage
   const intensity = damage < 15 ? 'light' : damage < 25 ? 'normal' : 'heavy';
@@ -740,27 +834,9 @@ function applyHit(world, attacker, victim, damage, knockback) {
   for (let i = 0; i < 3 + Math.floor(damage / 10); i++) {
     spawnSpark(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, i % 2 === 0 ? '#ffffff' : attacker.character.color);
   }
-  if (damage >= 20) spawnShockwave(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, attacker.character.color);
-  addShake(world, Math.min(10, damage * 0.4), 10);
-
-  if (victim.hp <= 0) {
-    victim.hp = 0;
-    victim.dead = true;
-    victim.state = 'dead';
-    victim.stateTime = 0;
-    victim.vel.vx = dir * Math.max(4.5, knockback * 0.9);
-    victim.vel.vy = -Math.max(7, knockback * 0.9);
-    victim.deathLanded = false;
-    victim.platformId = null;
-    audioManager.playKo();
-    spawnHitBurst(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, '#ffffff', 30);
-    spawnRing(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, attacker.character.color, 90);
-    spawnShockwave(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, '#ffffff');
-    for (let i = 0; i < 8; i++) {
-      spawnSpark(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, i % 2 === 0 ? '#ffffff' : attacker.character.color);
-    }
-    addShake(world, 14, 18);
-  }
+  if (damage >= 20 || launched >= 9) spawnShockwave(world, victim.pos.x, victim.pos.y - ENTITY_HEIGHT / 2, attacker.character.color);
+  addShake(world, Math.min(16, damage * 0.35 + launched * 0.65), 9 + Math.min(10, Math.floor(launched)));
+  world.hitPause = Math.max(world.hitPause, Math.min(HIT_PAUSE_MAX, 4 + Math.floor(launched * 0.6)));
 }
 
 function updateEntity(world, ent) {
@@ -792,6 +868,7 @@ function updateEntity(world, ent) {
   }
   if (ent.dropTimer > 0) ent.dropTimer -= 1;
   if (ent.landTime > 0) ent.landTime -= 1;
+  if (ent.respawnInvincible > 0) ent.respawnInvincible -= 1;
 
   ent.animTime += 1;
   ent.stateTime += 1;
@@ -799,11 +876,17 @@ function updateEntity(world, ent) {
   const prevY = ent.pos.y;
 
   if (ent.dead) {
+    if (ent.stocks > 0 && ent.respawnTimer > 0) {
+      ent.respawnTimer -= 1;
+      if (ent.respawnTimer <= 0) respawnEntity(world, ent);
+      updateEntityState(world, ent);
+      return;
+    }
     ent.vel.vy += GRAVITY;
     if (ent.vel.vy > MAX_FALL) ent.vel.vy = MAX_FALL;
     ent.pos.x += ent.vel.vx;
     ent.pos.y += ent.vel.vy;
-    ent.pos.x = clampX(ent.pos.x);
+    ent.pos.x = clampArenaX(ent.pos.x);
 
     const landingPlatform = findLandingPlatform(ent.pos.x, prevY, ent.pos.y, false);
     if (landingPlatform) {
@@ -827,6 +910,7 @@ function updateEntity(world, ent) {
 
   const canAct = !ent.action && ent.hurtTime <= 0 && ent.frozen <= 0;
   const inp = ent.input;
+  const jumpNow = inp.jumpPressed || (!ent.isPlayer && inp.jump);
   const currentPlatform = ent.onGround ? (getStagePlatform(ent.platformId) || findCurrentPlatform(ent.pos.x, ent.pos.y)) : null;
   const inVictory = world.winner && ((world.winner === 'player' && ent === world.player) || (world.winner === 'enemy' && ent === world.enemy));
 
@@ -836,7 +920,7 @@ function updateEntity(world, ent) {
   }
 
   let speedMul = ent.buff ? ent.buff.speedMul : 1;
-  if (ent.stealth > 0 && ent.character.id === 'assassin') speedMul *= (ent.character.ability2.speedBoost || 1.5);
+  if (ent.stealth > 0) speedMul *= (ent.stealthSpeed || 1.5);
   // Apply curse debuff
   if (ent._cursed && ent._cursed.duration > 0) speedMul *= ent._cursed.speedReduction;
   const baseSpeed = ent.character.speed * speedMul;
@@ -847,13 +931,17 @@ function updateEntity(world, ent) {
     else if (inp.right) ent.vel.vx = baseSpeed;
     else ent.vel.vx *= ent.onGround ? FRICTION : AIR_FRICTION;
 
-    if (inp.down && inp.jump && currentPlatform?.kind === 'soft') {
+    if (inp.down && jumpNow && currentPlatform?.kind === 'soft') {
       dropThroughPlatform(ent);
-    } else if (inp.jump && ent.onGround) {
+    } else if (jumpNow && ent.onGround) {
       ent.vel.vy = -ent.character.jumpPower;
       ent.onGround = false;
       ent.platformId = null;
       spawnDust(world, ent.pos.x, prevY);
+    } else if (jumpNow && !ent.onGround && ent.airJumps > 0) {
+      ent.airJumps -= 1;
+      ent.vel.vy = -ent.character.jumpPower * 0.92;
+      spawnDust(world, ent.pos.x, ent.pos.y);
     }
   } else {
     ent.vel.vx *= ent.onGround ? FRICTION : AIR_FRICTION;
@@ -866,7 +954,7 @@ function updateEntity(world, ent) {
 
   ent.pos.x += ent.vel.vx;
   ent.pos.y += ent.vel.vy;
-  ent.pos.x = clampX(ent.pos.x);
+  ent.pos.x = clampArenaX(ent.pos.x);
 
   const landingPlatform = ent.vel.vy >= 0 ? findLandingPlatform(ent.pos.x, prevY, ent.pos.y, ent.dropTimer > 0) : null;
   if (landingPlatform) {
@@ -877,6 +965,8 @@ function updateEntity(world, ent) {
   }
 
   updateEntityState(world, ent);
+  ent.input.jumpPressed = false;
+  if (!world.winner && hasLeftBlastZone(ent)) koEntity(world, ent);
 }
 
 function updateProjectiles(world) {
@@ -984,6 +1074,17 @@ function updateMinions(world) {
 
 export function tick(world) {
   world.tick += 1;
+  if (world.koText) {
+    world.koText.time -= 1;
+    if (world.koText.time <= 0) world.koText = null;
+  }
+  if (world.hitPause > 0) {
+    world.hitPause -= 1;
+    updateParticles(world);
+    if (world.shake.time > 0) world.shake.time -= 1;
+    else world.shake.mag = 0;
+    return;
+  }
   updateEntity(world, world.player);
   updateEntity(world, world.enemy);
   updateProjectiles(world);
@@ -994,15 +1095,6 @@ export function tick(world) {
   updateParticles(world);
   if (world.shake.time > 0) world.shake.time -= 1;
   else world.shake.mag = 0;
-
-  if (!world.winner) {
-    if (world.player.dead || world.enemy.dead) world.overTime += 1;
-    if (world.overTime > 90) {
-      if (world.player.dead && !world.enemy.dead) world.winner = 'enemy';
-      else if (world.enemy.dead && !world.player.dead) world.winner = 'player';
-      else if (world.player.dead && world.enemy.dead) world.winner = 'enemy';
-    }
-  }
   if (world.winner && !world.victoryPlayed) {
     world.victoryPlayed = true;
     audioManager.playVictory();
@@ -1059,6 +1151,7 @@ export function applyPlayerInput(world, input) {
   p.input.right = input.state.right;
   p.input.down = input.state.down;
   p.input.jump = input.state.jump;
+  p.input.jumpPressed = input.consumePressed('jump');
   if (input.consumePressed('basic')) p.queuedAction = 'basic';
   else if (input.consumePressed('ability1')) p.queuedAction = 'ability1';
   else if (input.consumePressed('ability2')) p.queuedAction = 'ability2';

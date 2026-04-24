@@ -1,4 +1,4 @@
-import { ARENA_W, ARENA_H, GROUND_Y, ENTITY_HEIGHT } from './constants.js';
+import { ARENA_W, ARENA_H, GROUND_Y, ENTITY_HEIGHT, BLAST_ZONE } from './constants.js';
 import { STAGE_PLATFORMS } from './stage.js';
 
 function drawLowerAtmosphere(ctx, colors) {
@@ -361,6 +361,16 @@ function bodyPose(ent) {
       pose.tilt = -0.32 * ent.facing;
       pose.bob = 1.5;
       break;
+    case 'respawn': {
+      const pulse = Math.sin(t * 0.24);
+      pose.frontLeg = -0.28 + pulse * 0.08;
+      pose.backLeg = 0.18 - pulse * 0.08;
+      pose.backArm = -0.88;
+      pose.weaponAngle = -0.9 + pulse * 0.08;
+      pose.tilt = ent.facing * 0.04;
+      pose.bob = -4 + pulse * 1.8;
+      break;
+    }
     case 'dead':
       if (ent.deathLanded) {
         pose.frontLeg = 1.14;
@@ -523,7 +533,8 @@ export function drawStickman(ctx, ent) {
   const baseAlpha = ctx.globalAlpha;
 
   const flash = ent.flashTime > 0;
-  const lineColor = flash ? '#ffffff' : (ent.dead ? '#5b6477' : ch.color);
+  const blink = ent.iframes > 0 && Math.floor(ent.iframes / 6) % 2 === 0;
+  const lineColor = flash || blink ? '#ffffff' : (ent.dead ? '#5b6477' : ch.color);
   const accent = flash ? '#ffffff' : ch.accent;
 
   ctx.lineCap = 'round';
@@ -618,6 +629,19 @@ export function drawStickman(ctx, ent) {
     ctx.globalAlpha = shieldAlpha * 0.25;
     ctx.fillStyle = '#34d399';
     ctx.fill();
+    ctx.restore();
+  }
+
+  if (ent.respawnInvincible > 0 && !ent.dead) {
+    ctx.save();
+    const a = Math.min(0.55, ent.respawnInvincible / 150 * 0.55);
+    ctx.globalAlpha = a;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 7]);
+    ctx.beginPath();
+    ctx.arc(x, groundY - ENTITY_HEIGHT / 2, 42 + Math.sin(ent.animTime * 0.16) * 4, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 }
@@ -761,6 +785,70 @@ function drawHeadgear(ctx, ch, chestY, headR, accent, line, f) {
       ctx.beginPath();
       ctx.arc(headR / 2, chestY - headR - 4, 2, 0, Math.PI * 2);
       ctx.fill();
+      break;
+    default:
+      if (ch.archetype === 'Sword Fighters') {
+        ctx.fillRect(-headR - 1, chestY - headR - 12, headR * 2 + 2, 3);
+        ctx.fillRect(4 * f, chestY - headR - 18, 3 * f, 10);
+      } else if (ch.archetype === 'Spear Users') {
+        ctx.beginPath();
+        ctx.moveTo(-headR - 1, chestY - headR - 2);
+        ctx.lineTo(0, chestY - headR - 15);
+        ctx.lineTo(headR + 1, chestY - headR - 2);
+        ctx.closePath();
+        ctx.fill();
+      } else if (ch.archetype === 'Heavy Brutes') {
+        ctx.fillRect(-headR - 2, chestY - headR - 11, headR * 2 + 4, 5);
+        ctx.beginPath();
+        ctx.moveTo(-headR - 2, chestY - headR - 7);
+        ctx.lineTo(-headR - 7, chestY - headR - 17);
+        ctx.lineTo(-headR + 2, chestY - headR - 8);
+        ctx.closePath();
+        ctx.fill();
+      } else if (ch.archetype === 'Fast Assassins') {
+        ctx.beginPath();
+        ctx.arc(0, chestY - headR - 2, headR + 3, Math.PI, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = line;
+        ctx.fillRect(-headR - 2, chestY - headR - 2, (headR + 2) * 2, 4);
+      } else if (ch.archetype === 'Mages') {
+        ctx.beginPath();
+        ctx.moveTo(-headR - 2, chestY - headR - 2);
+        ctx.lineTo(headR + 2, chestY - headR - 2);
+        ctx.lineTo(2 * f, chestY - headR - 25);
+        ctx.closePath();
+        ctx.fill();
+      } else if (ch.archetype === 'Elemental Users') {
+        for (let fi = -1; fi <= 1; fi++) {
+          ctx.beginPath();
+          ctx.moveTo(fi * headR * 0.55 - 3, chestY - headR - 2);
+          ctx.lineTo(fi * headR * 0.55, chestY - headR - 12 - Math.abs(fi) * 3);
+          ctx.lineTo(fi * headR * 0.55 + 3, chestY - headR - 2);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (ch.archetype === 'Ranged Fighters') {
+        ctx.beginPath();
+        ctx.moveTo(-headR - 3, chestY - headR);
+        ctx.lineTo(headR + 4, chestY - headR);
+        ctx.lineTo(8 * f, chestY - headR - 15);
+        ctx.lineTo(-headR + 2, chestY - headR - 7);
+        ctx.closePath();
+        ctx.fill();
+      } else if (ch.archetype === 'Control / Summoners') {
+        ctx.fillRect(-headR, chestY - headR - 10, headR * 2, 4);
+        ctx.beginPath();
+        ctx.arc(0, chestY - headR - 16, 4, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (ch.archetype === 'Defensive / Shield Types') {
+        ctx.fillRect(-headR - 2, chestY - headR - 10, headR * 2 + 4, 4);
+        ctx.beginPath();
+        ctx.moveTo(-headR - 3, chestY - headR - 6);
+        ctx.lineTo(0, chestY - headR - 18);
+        ctx.lineTo(headR + 3, chestY - headR - 6);
+        ctx.closePath();
+        ctx.fill();
+      }
       break;
   }
   ctx.restore();
@@ -1296,6 +1384,58 @@ export function drawEffects(ctx, world) {
   }
 }
 
+function drawSmashOverlays(ctx, world) {
+  ctx.save();
+  ctx.globalAlpha = 0.12 + Math.sin(world.tick * 0.08) * 0.03;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([12, 12]);
+  ctx.strokeRect(BLAST_ZONE.left, BLAST_ZONE.top, BLAST_ZONE.right - BLAST_ZONE.left, BLAST_ZONE.bottom - BLAST_ZONE.top);
+  ctx.restore();
+
+  if (world.koText) {
+    const k = world.koText;
+    const a = Math.max(0, k.time / k.maxTime);
+    const pop = 1 + (1 - a) * 0.24;
+    ctx.save();
+    ctx.translate(k.x, k.y);
+    ctx.scale(pop, pop);
+    ctx.globalAlpha = Math.min(1, a * 1.4);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '900 78px Bebas Neue, Impact, sans-serif';
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.72)';
+    ctx.strokeText('KO', 0, 0);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('KO', 0, 0);
+    ctx.font = '800 18px Barlow Condensed, Arial, sans-serif';
+    ctx.letterSpacing = '0px';
+    ctx.fillStyle = k.color;
+    ctx.fillText(k.text, 0, 54);
+    ctx.restore();
+  }
+
+  if (world.winner) {
+    const winner = world.winner === 'player' ? world.player : world.enemy;
+    ctx.save();
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.38)';
+    ctx.fillRect(0, 0, ARENA_W, ARENA_H);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '900 86px Bebas Neue, Impact, sans-serif';
+    ctx.lineWidth = 12;
+    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.strokeText('GAME', ARENA_W / 2, ARENA_H / 2 - 20);
+    ctx.fillStyle = winner.character.color;
+    ctx.fillText('GAME', ARENA_W / 2, ARENA_H / 2 - 20);
+    ctx.font = '800 22px Barlow Condensed, Arial, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`${winner.character.name} wins`, ARENA_W / 2, ARENA_H / 2 + 48);
+    ctx.restore();
+  }
+}
+
 export function renderWorld(ctx, world, stage = 'rooftop', time = 0) {
   let sx = 0, sy = 0;
   if (world.shake.mag > 0) {
@@ -1321,6 +1461,7 @@ export function renderWorld(ctx, world, stage = 'rooftop', time = 0) {
   for (const p of world.projectiles) drawProjectile(ctx, p);
 
   drawEffects(ctx, world);
+  drawSmashOverlays(ctx, world);
 
   ctx.restore();
 }
